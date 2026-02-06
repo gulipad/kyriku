@@ -1,0 +1,68 @@
+{
+  "splats": [
+    {
+      "title": "Casa",
+      "date": "2026-01-23",
+      "location": "Ngozi, Burundi",
+      "splatFile": "casa.sog",
+      "fov": 14,
+      "cameraPosition": [-0.09, -0.19, 5.47],
+      "focusPoint": [0, -0.18, 4.66],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+    },
+    {
+      "title": "Costurera",
+      "date": "2026-01-23",
+      "location": "Ngozi, Burundi",
+      "splatFile": "costurera.sog",
+      "fov": 16,
+      "cameraPosition": [0.07, -0.11, 0.54],
+      "focusPoint": [0.12, -0.12, -1.85],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+    },
+    {
+      "title": "Closeup",
+      "date": "2026-01-23",
+      "location": "Ngozi, Burundi",
+      "splatFile": "closeup.sog",
+      "fov": 13,
+      "cameraPosition": [0.04, 0.04, 1.26],
+      "focusPoint": [0, 0.03, -1.53],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+    },
+    {
+      "title": "MUAC",
+      "date": "2026-01-23",
+      "location": "Ngozi, Burundi",
+      "splatFile": "muac.sog",
+      "fov": 16,
+      "cameraPosition": [0.15, -0.11, 1.04],
+      "focusPoint": [0.15, -0.12, -1.35],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+    },
+    {
+      "title": "Muletas",
+      "date": "2026-01-23",
+      "location": "Ngozi, Burundi",
+      "splatFile": "muletas.sog",
+      "fov": 12,
+      "cameraPosition": [0.53, -0.08, 2.19],
+      "focusPoint": [0.44, 0.01, -1.17],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+    },
+    {
+      "title": "Tejedora",
+      "date": "2026-01-23",
+      "location": "Ngozi, Burundi",
+      "splatFile": "tejedora.sog",
+      "fov": 13,
+      "cameraPosition": [0.11, -0.5, 1.66],
+      "focusPoint": [0.07, -0.11, -1.38],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+    }
+  ],
+  "settings": {
+    "fov": 50,
+    "parallaxAmount": { "yaw": 8, "pitch": 4 }
+  }
+}
