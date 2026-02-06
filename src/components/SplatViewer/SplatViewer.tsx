@@ -16,6 +16,7 @@ interface SplatConfig {
   title: string;
   date?: string;
   description?: string;
+  descriptionEs?: string;
   town?: string;
   coordinates?: [number, number];
   fov?: number;
@@ -24,6 +25,25 @@ interface SplatConfig {
   parallaxAmount?: ParallaxAmount;
   zoomRange?: [number, number];
 }
+
+type Lang = 'en' | 'es';
+
+const translations = {
+  en: {
+    tutorial: 'MOVE THE MOUSE TO EXPERIENCE IN 3D',
+    tutorialMobile: 'SWIPE TO EXPERIENCE IN 3D',
+    tutorialArrows: 'ARROW KEYS TO CHANGE',
+    zoomHint: '[+/-] OR SCROLL TO ZOOM',
+    changePicture: '[←/→] CHANGE PICTURE',
+  },
+  es: {
+    tutorial: 'MUEVE EL RATÓN PARA EXPERIMENTAR EN 3D',
+    tutorialMobile: 'DESLIZA PARA EXPERIMENTAR EN 3D',
+    tutorialArrows: 'FLECHAS PARA CAMBIAR',
+    zoomHint: '[+/-] O SCROLL PARA ZOOM',
+    changePicture: '[←/→] CAMBIAR IMAGEN',
+  },
+} as const;
 
 interface Settings {
   fov: number;
@@ -122,6 +142,9 @@ interface LiveValues {
 export default function SplatViewer({ config }: SplatViewerProps) {
   const [hasBooted, setHasBooted] = useState(true); // TODO: restore to false to re-enable boot animation
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [lang, setLang] = useState<Lang>(() =>
+    typeof navigator !== 'undefined' && navigator.language.startsWith('es') ? 'es' : 'en'
+  );
   const [resetKey, setResetKey] = useState(0);
   const [controlMode, setControlMode] = useState(false);
   const [activeFov, setActiveFov] = useState<number | null>(null);
@@ -143,6 +166,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
 
   const { splats, settings } = config;
   const currentSplat = splats[currentIndex];
+  const t = translations[lang];
 
   const handleBootComplete = useCallback(() => {
     setHasBooted(true);
@@ -580,7 +604,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
           bottom: 20,
           left: 20,
           pointerEvents: 'none',
-          minWidth: '260px',
+          maxWidth: '250px',
           zIndex: 20,
         }}
       >
@@ -591,9 +615,8 @@ export default function SplatViewer({ config }: SplatViewerProps) {
         </CLISection>
         {(currentSplat.town || currentSplat.coordinates) && (
           <CLISection style={{ padding: '0.4rem 0.6rem' }}>
-            <div style={{ opacity: 0.7, fontSize: '0.7rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', opacity: 0.7, fontSize: '0.7rem' }}>
               {currentSplat.town && <span>{currentSplat.town.toUpperCase()}</span>}
-              {currentSplat.town && currentSplat.coordinates && ' '}
               {currentSplat.coordinates && (
                 <a
                   href={`https://www.google.com/maps?q=${currentSplat.coordinates[0]},${currentSplat.coordinates[1]}`}
@@ -610,7 +633,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
         {currentSplat.description && (
           <CLISection style={{ padding: '0.4rem 0.6rem' }}>
             <div style={{ opacity: 0.7, fontSize: '0.6rem', lineHeight: 1.4 }}>
-              {currentSplat.description}
+              {lang === 'es' ? (currentSplat.descriptionEs ?? currentSplat.description) : currentSplat.description}
             </div>
           </CLISection>
         )}
@@ -619,7 +642,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
             <span>[{currentIndex + 1}/{splats.length}]</span>
             {currentSplat.date && (
               <span>
-                {new Date(currentSplat.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+                {new Date(currentSplat.date).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
               </span>
             )}
           </div>
@@ -703,10 +726,15 @@ export default function SplatViewer({ config }: SplatViewerProps) {
           ) : (
             <CLISection noBorderTop style={{ padding: '0.4rem 0.6rem' }}>
               <div style={{ opacity: 0.5, fontSize: '0.6rem' }}>
-                [+/-] OR SCROLL TO ZOOM
+                {t.zoomHint}
               </div>
               <div style={{ opacity: 0.5, fontSize: '0.6rem', marginTop: '0.15rem' }}>
-                [&larr;/&rarr;] CHANGE PICTURE
+                {t.changePicture}
+              </div>
+              <div style={{ marginTop: '0.3rem', pointerEvents: 'auto' }}>
+                <CLIButton onClick={() => setLang(l => l === 'en' ? 'es' : 'en')}>
+                  {lang === 'en' ? 'EN/es' : 'en/ES'}
+                </CLIButton>
               </div>
             </CLISection>
           )}
@@ -736,7 +764,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
               }}
             >
               <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>
-                {isMobile ? 'SWIPE TO EXPERIENCE IN 3D' : 'MOVE THE MOUSE TO EXPERIENCE IN 3D | ARROW KEYS TO CHANGE'}
+                {isMobile ? t.tutorialMobile : `${t.tutorial} | ${t.tutorialArrows}`}
               </div>
             </CLISection>
           </CLIFrame>

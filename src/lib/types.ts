@@ -8,6 +8,7 @@ export interface SplatConfig {
   date: string;
   splatFile: string;
   description?: string;
+  descriptionEs?: string;
   town?: string;
   coordinates?: [number, number]; // [latitude, longitude]
   fov?: number;
