@@ -3,30 +3,74 @@
 import { useState, useEffect, CSSProperties } from "react";
 import { CLIFrame, CLISection } from "./CLIFrame";
 
-const bootMessages = [
-  { text: "KYRIKU v1.0", type: "header" },
-  { text: "A project for Ana, by Guli", type: "subtitle" },
-  { text: "", type: "spacer" },
-  { text: "Initializing renderer", type: "ok" },
-  { text: "Fetching core memories", type: "ok" },
-  { text: "Loading WebGL context", type: "ok" },
-  { text: "Calibrating flux capacitor", type: "ok" },
-  { text: "Reticulating splines", type: "ok" },
-  { text: "Preparing gaussian splat decoder", type: "ok" },
-  { text: "Warming up the pixels", type: "ok" },
-  { text: "Convincing electrons to cooperate", type: "ok" },
-  { text: "Celebrating 2 years together", type: "ok" },
-  { text: "Loading 3D memories", type: "ok" },
-];
+type Lang = "en" | "es";
+
+const linkStyle: CSSProperties = {
+  color: "inherit",
+  textDecoration: "underline",
+};
+
+const bootMessages = {
+  en: [
+    { text: "KYRIKU v1.0", type: "header" },
+    { type: "subtitle" },
+    { type: "spacer" },
+    { text: "Initializing renderer", type: "ok" },
+    { text: "Fetching core memories", type: "ok" },
+    { text: "Loading WebGL context", type: "ok" },
+    { text: "Calibrating flux capacitor", type: "ok" },
+    { text: "Reticulating splines", type: "ok" },
+    { text: "Preparing gaussian splat decoder", type: "ok" },
+    { text: "Warming up the pixels", type: "ok" },
+    { text: "Convincing electrons to cooperate", type: "ok" },
+    { text: "Celebrating 2 years together", type: "ok" },
+    { text: "Loading 3D memories", type: "ok" },
+  ],
+  es: [
+    { text: "KYRIKU v1.0", type: "header" },
+    { type: "subtitle" },
+    { type: "spacer" },
+    { text: "Inicializando renderer", type: "ok" },
+    { text: "Recuperando recuerdos", type: "ok" },
+    { text: "Cargando contexto WebGL", type: "ok" },
+    { text: "Calibrando condensador de flujo", type: "ok" },
+    { text: "Reticulando splines", type: "ok" },
+    { text: "Preparando decodificador de splats", type: "ok" },
+    { text: "Calentando los píxeles", type: "ok" },
+    { text: "Convenciendo a los electrones", type: "ok" },
+    { text: "Celebrando 2 años juntos", type: "ok" },
+    { text: "Cargando recuerdos 3D", type: "ok" },
+  ],
+};
+
+const loaderUi = {
+  en: {
+    bootSequence: "BOOT SEQUENCE",
+    finalizing: "Finalizing",
+    enterDesktop: "PRESS ENTER TO CONTINUE",
+    enterMobile: "DOUBLE TAP TO ENTER",
+    loadingSplat: "Loading splat",
+  },
+  es: {
+    bootSequence: "SECUENCIA DE ARRANQUE",
+    finalizing: "Finalizando",
+    enterDesktop: "PRESIONA ENTER PARA CONTINUAR",
+    enterMobile: "TOCA DOS VECES PARA ENTRAR",
+    loadingSplat: "Cargando splat",
+  },
+};
 
 const MESSAGE_DELAY = 180; // ms between each message
 
 interface CLILoaderProps {
   onReady?: () => void;
   isMobile?: boolean;
+  lang?: Lang;
 }
 
-export function CLILoader({ onReady, isMobile }: CLILoaderProps) {
+export function CLILoader({ onReady, isMobile, lang = "en" }: CLILoaderProps) {
+  const messages = bootMessages[lang];
+  const ui = loaderUi[lang];
   const [visibleLines, setVisibleLines] = useState(0);
   const [cursor, setCursor] = useState(true);
   const [dots, setDots] = useState("");
@@ -36,7 +80,7 @@ export function CLILoader({ onReady, isMobile }: CLILoaderProps) {
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
 
-    bootMessages.forEach((_, index) => {
+    messages.forEach((_, index) => {
       const timer = setTimeout(() => {
         setVisibleLines(index + 1);
       }, index * MESSAGE_DELAY);
@@ -48,12 +92,12 @@ export function CLILoader({ onReady, isMobile }: CLILoaderProps) {
       () => {
         setIsComplete(true);
       },
-      bootMessages.length * MESSAGE_DELAY + 500,
+      messages.length * MESSAGE_DELAY + 500,
     );
     timers.push(completeTimer);
 
     return () => timers.forEach(clearTimeout);
-  }, []);
+  }, [messages]);
 
   // Blinking cursor
   useEffect(() => {
@@ -147,10 +191,10 @@ export function CLILoader({ onReady, isMobile }: CLILoaderProps) {
               fontSize: "0.65rem",
             }}
           >
-            {">"} BOOT SEQUENCE
+            {">"} {ui.bootSequence}
           </div>
 
-          {bootMessages.slice(0, visibleLines).map((msg, index) => {
+          {messages.slice(0, visibleLines).map((msg, index) => {
             if (msg.type === "spacer") {
               return <div key={index} style={{ height: "0.5rem" }} />;
             }
@@ -174,7 +218,10 @@ export function CLILoader({ onReady, isMobile }: CLILoaderProps) {
                     marginBottom: "0.25rem",
                   }}
                 >
-                  {msg.text}
+                  {lang === "es" ? "Un proyecto para " : "A project for "}
+                  <a href="https://kyriku.org/" target="_blank" rel="noopener noreferrer" style={linkStyle}>Kyriku</a>
+                  {lang === "es" ? ", por " : ", by "}
+                  <a href="https://gulipad.com" target="_blank" rel="noopener noreferrer" style={linkStyle}>Gulipad</a>
                 </div>
               );
             }
@@ -195,9 +242,9 @@ export function CLILoader({ onReady, isMobile }: CLILoaderProps) {
             );
           })}
 
-          {visibleLines >= bootMessages.length && !isComplete && (
+          {visibleLines >= messages.length && !isComplete && (
             <div style={{ marginTop: "0.5rem", fontSize: "0.75rem" }}>
-              <span style={{ opacity: 0.7 }}>{">"}</span> Finalizing{dots}
+              <span style={{ opacity: 0.7 }}>{">"}</span> {ui.finalizing}{dots}
               <span style={{ opacity: cursor ? 1 : 0 }}>_</span>
             </div>
           )}
@@ -234,7 +281,7 @@ export function CLILoader({ onReady, isMobile }: CLILoaderProps) {
                 transition: "opacity 0.1s",
               }}
             >
-              {isMobile ? "DOUBLE TAP TO ENTER" : "PRESS ENTER TO CONTINUE"}
+              {isMobile ? ui.enterMobile : ui.enterDesktop}
             </div>
           )}
           <style>{`
@@ -253,10 +300,12 @@ export function CLILoader({ onReady, isMobile }: CLILoaderProps) {
 // Minimal loader for between splats
 interface CLIMiniLoaderProps {
   visible?: boolean;
+  lang?: Lang;
   style?: CSSProperties;
 }
 
-export function CLIMiniLoader({ visible = true, style }: CLIMiniLoaderProps) {
+export function CLIMiniLoader({ visible = true, lang = "en", style }: CLIMiniLoaderProps) {
+  const ui = loaderUi[lang];
   const [dots, setDots] = useState("");
   const [cursor, setCursor] = useState(true);
 
@@ -297,7 +346,7 @@ export function CLIMiniLoader({ visible = true, style }: CLIMiniLoaderProps) {
       <CLIFrame style={{ minWidth: "200px" }}>
         <CLISection noBorderTop>
           <div style={{ fontSize: "0.75rem", textAlign: "center" }}>
-            Loading splat{dots}
+            {ui.loadingSplat}{dots}
             <span style={{ opacity: cursor ? 1 : 0 }}>_</span>
           </div>
         </CLISection>

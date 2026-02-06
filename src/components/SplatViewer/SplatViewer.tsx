@@ -576,7 +576,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   // if (!hasBooted) {
   //   return (
   //     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-  //       <CLILoader onReady={handleBootComplete} isMobile={isMobile} />
+  //       <CLILoader onReady={handleBootComplete} isMobile={isMobile} lang={lang} />
   //     </div>
   //   );
   // }
@@ -595,7 +595,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
       </Application>
 
       {/* Loader while splat loads - starts visible, hidden when asset loads */}
-      <CLIMiniLoader visible={loaderVisible} />
+      <CLIMiniLoader visible={loaderVisible} lang={lang} />
 
       {/* Info overlay - bottom left */}
       <CLIFrame
