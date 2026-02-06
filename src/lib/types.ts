@@ -7,7 +7,9 @@ export interface SplatConfig {
   title: string;
   date: string;
   splatFile: string;
-  location?: string;
+  description?: string;
+  town?: string;
+  coordinates?: [number, number]; // [latitude, longitude]
   fov?: number;
   cameraPosition: [number, number, number];
   focusPoint: [number, number, number];

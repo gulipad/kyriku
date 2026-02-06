@@ -15,7 +15,9 @@ interface SplatConfig {
   splatFile: string;
   title: string;
   date?: string;
-  location?: string;
+  description?: string;
+  town?: string;
+  coordinates?: [number, number];
   fov?: number;
   cameraPosition: [number, number, number];
   focusPoint: [number, number, number];
@@ -39,6 +41,12 @@ const DEFAULT_FOCUS_POINT: [number, number, number] = [0, 0, 0];
 const DEFAULT_CONFIG_CAMERA_POSITION: [number, number, number] = [0, 0, 3];
 
 const DEFAULT_PARALLAX_AMOUNT: ParallaxAmount = { yaw: 8, pitch: 4 };
+
+function formatCoord(lat: number, lon: number): string {
+  const latDir = lat >= 0 ? 'N' : 'S';
+  const lonDir = lon >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(4)}°${latDir}, ${Math.abs(lon).toFixed(4)}°${lonDir}`;
+}
 
 function NudgeRow({
   label,
@@ -572,27 +580,48 @@ export default function SplatViewer({ config }: SplatViewerProps) {
           bottom: 20,
           left: 20,
           pointerEvents: 'none',
-          minWidth: '200px',
+          minWidth: '260px',
           zIndex: 20,
         }}
       >
         <CLISection noBorderTop style={{ padding: '0.4rem 0.6rem' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
             {currentSplat.title.toUpperCase()}
-          </div>
+          </span>
         </CLISection>
-        {(currentSplat.date || currentSplat.location) && (
+        {(currentSplat.town || currentSplat.coordinates) && (
           <CLISection style={{ padding: '0.4rem 0.6rem' }}>
             <div style={{ opacity: 0.7, fontSize: '0.7rem' }}>
-              {currentSplat.date && new Date(currentSplat.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
-              {currentSplat.date && currentSplat.location && ' | '}
-              {currentSplat.location?.toUpperCase()}
+              {currentSplat.town && <span>{currentSplat.town.toUpperCase()}</span>}
+              {currentSplat.town && currentSplat.coordinates && ' '}
+              {currentSplat.coordinates && (
+                <a
+                  href={`https://www.google.com/maps?q=${currentSplat.coordinates[0]},${currentSplat.coordinates[1]}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: 'inherit', textDecoration: 'underline', pointerEvents: 'auto' }}
+                >
+                  {formatCoord(currentSplat.coordinates[0], currentSplat.coordinates[1])}
+                </a>
+              )}
+            </div>
+          </CLISection>
+        )}
+        {currentSplat.description && (
+          <CLISection style={{ padding: '0.4rem 0.6rem' }}>
+            <div style={{ opacity: 0.7, fontSize: '0.6rem', lineHeight: 1.4 }}>
+              {currentSplat.description}
             </div>
           </CLISection>
         )}
         <CLISection style={{ padding: '0.4rem 0.6rem' }}>
-          <div style={{ opacity: 0.5, fontSize: '0.65rem' }}>
-            [{currentIndex + 1}/{splats.length}] {isMobile ? 'DOUBLE TAP' : 'USE ARROW KEYS'}
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', opacity: 0.5, fontSize: '0.65rem' }}>
+            <span>[{currentIndex + 1}/{splats.length}]</span>
+            {currentSplat.date && (
+              <span>
+                {new Date(currentSplat.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+              </span>
+            )}
           </div>
         </CLISection>
       </CLIFrame>
@@ -675,6 +704,9 @@ export default function SplatViewer({ config }: SplatViewerProps) {
             <CLISection noBorderTop style={{ padding: '0.4rem 0.6rem' }}>
               <div style={{ opacity: 0.5, fontSize: '0.6rem' }}>
                 [+/-] OR SCROLL TO ZOOM
+              </div>
+              <div style={{ opacity: 0.5, fontSize: '0.6rem', marginTop: '0.15rem' }}>
+                [&larr;/&rarr;] CHANGE PICTURE
               </div>
             </CLISection>
           )}
