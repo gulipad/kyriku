@@ -4,6 +4,7 @@ import type { ParallaxAmount } from '@/lib/types';
 
 const DEG = Math.PI / 180;
 const SMOOTH_SPEED = 8; // exponential decay rate (~87ms half-life)
+const KEY_DOLLY_STEP = 0.25; // distance change per keypress, proportional to distance
 
 export function useParallax(
   cameraRef: React.MutableRefObject<PCEntity | null>,
@@ -11,12 +12,17 @@ export function useParallax(
   cameraPosition: [number, number, number],
   parallaxAmount: ParallaxAmount,
   enabled: boolean,
+  onMouseMove?: () => void,
 ) {
   // Store mouse position in ref to avoid re-renders
   const mouseRef = useRef({ x: 0, y: 0 });
   const currentOffset = useRef({ yaw: 0, pitch: 0 });
   const lastTime = useRef(0);
   const rafId = useRef(0);
+
+  // Dolly zoom state
+  const targetDistance = useRef(0);
+  const currentDistance = useRef(0);
 
   // Compute initial spherical coords from cameraPosition → focusPoint
   const initialRef = useRef({ yaw: 0, pitch: 0, distance: 0 });
@@ -30,22 +36,47 @@ export function useParallax(
     const yaw = Math.atan2(-dx, -dz);
 
     initialRef.current = { yaw, pitch, distance };
+    targetDistance.current = distance;
+    currentDistance.current = distance;
   }, [focusPoint, cameraPosition]);
+
+  // Stable callback ref for onMouseMove
+  const onMouseMoveRef = useRef(onMouseMove);
+  onMouseMoveRef.current = onMouseMove;
 
   // Mouse tracking
   useEffect(() => {
     if (!enabled) return;
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onMove = (e: MouseEvent) => {
       mouseRef.current.x = (e.clientX / window.innerWidth) * 2 - 1;
       mouseRef.current.y = (e.clientY / window.innerHeight) * 2 - 1;
+      onMouseMoveRef.current?.();
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    return () => window.removeEventListener('mousemove', onMouseMove);
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
   }, [enabled]);
 
-  // When becoming enabled, initialize currentOffset from entity's actual position
+  // +/- keys for dolly zoom
+  useEffect(() => {
+    if (!enabled) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const step = initialRef.current.distance * KEY_DOLLY_STEP;
+      if (e.key === '=' || e.key === '+') {
+        targetDistance.current = Math.max(0.05, targetDistance.current - step);
+      } else if (e.key === '-' || e.key === '_') {
+        const maxDist = initialRef.current.distance * 1.5;
+        targetDistance.current = Math.min(maxDist, targetDistance.current + step);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [enabled]);
+
+  // When becoming enabled, initialize currentOffset and distance from entity's actual position
   useEffect(() => {
     if (!enabled) return;
 
@@ -53,7 +84,7 @@ export function useParallax(
     if (!entity) return;
 
     const pos = entity.getPosition();
-    const { yaw: restYaw, pitch: restPitch, distance } = initialRef.current;
+    const { yaw: restYaw, pitch: restPitch } = initialRef.current;
     const focus = new Vec3(focusPoint[0], focusPoint[1], focusPoint[2]);
 
     // Compute current spherical offset relative to rest position
@@ -62,11 +93,14 @@ export function useParallax(
     const dz = pos.z - focus.z;
     const currentDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-    if (currentDist > 0.001 && distance > 0.001) {
+    if (currentDist > 0.001) {
       const currentPitch = Math.asin(Math.max(-1, Math.min(1, -dy / currentDist)));
       const currentYaw = Math.atan2(dx, dz);
       currentOffset.current.yaw = (currentYaw - restYaw) / DEG;
       currentOffset.current.pitch = (currentPitch - restPitch) / DEG;
+      // Preserve distance from edit mode
+      targetDistance.current = currentDist;
+      currentDistance.current = currentDist;
     } else {
       currentOffset.current.yaw = 0;
       currentOffset.current.pitch = 0;
@@ -97,7 +131,7 @@ export function useParallax(
       const dt = lastTime.current ? Math.min((now - lastTime.current) / 1000, 0.1) : 0.016;
       lastTime.current = now;
 
-      const { yaw: restYaw, pitch: restPitch, distance } = initialRef.current;
+      const { yaw: restYaw, pitch: restPitch } = initialRef.current;
 
       // Target offsets in degrees
       const targetYaw = mouseRef.current.x * parallaxAmount.yaw;
@@ -108,9 +142,13 @@ export function useParallax(
       currentOffset.current.yaw += (targetYaw - currentOffset.current.yaw) * t;
       currentOffset.current.pitch += (targetPitch - currentOffset.current.pitch) * t;
 
+      // Smooth distance toward target
+      currentDistance.current += (targetDistance.current - currentDistance.current) * t;
+
       // Compute camera position from orbit
       const yaw = restYaw + currentOffset.current.yaw * DEG;
       const pitch = restPitch + currentOffset.current.pitch * DEG;
+      const distance = currentDistance.current;
 
       const camX = focus.x + Math.sin(yaw) * Math.cos(pitch) * distance;
       const camY = focus.y - Math.sin(pitch) * distance;

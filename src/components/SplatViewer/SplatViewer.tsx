@@ -119,6 +119,11 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   const [activeParallax, setActiveParallax] = useState<ParallaxAmount | null>(null);
   const [liveValues, setLiveValues] = useState<LiveValues | null>(null);
   const [loaderVisible, setLoaderVisible] = useState(true);
+  const [tutorialVisible, setTutorialVisible] = useState(true);
+  const [tutorialDismissing, setTutorialDismissing] = useState(false);
+  const tutorialDismissedRef = useRef(false);
+  const tutorialMouseMovedRef = useRef(false);
+  const tutorialTimerReadyRef = useRef(false);
   const cameraRef = useRef<PCEntity | null>(null);
 
   // Detect mobile (compute once)
@@ -142,6 +147,42 @@ export default function SplatViewer({ config }: SplatViewerProps) {
     setLoaderVisible(false);
   }, []);
 
+  // Tutorial: dismiss after mouse move + 3 second minimum
+  const tryDismissTutorial = useCallback(() => {
+    if (tutorialDismissedRef.current) return;
+    if (tutorialMouseMovedRef.current && tutorialTimerReadyRef.current) {
+      tutorialDismissedRef.current = true;
+      setTutorialDismissing(true);
+      setTimeout(() => setTutorialVisible(false), 1500);
+    }
+  }, []);
+
+  const handleParallaxMouseMove = useCallback(() => {
+    if (tutorialMouseMovedRef.current) return;
+    tutorialMouseMovedRef.current = true;
+    tryDismissTutorial();
+  }, [tryDismissTutorial]);
+
+  useEffect(() => {
+    if (tutorialDismissedRef.current) return;
+    const timer = setTimeout(() => {
+      tutorialTimerReadyRef.current = true;
+      tryDismissTutorial();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [tryDismissTutorial]);
+
+  // Mobile: dismiss tutorial on touch
+  useEffect(() => {
+    if (!isMobile || tutorialDismissedRef.current) return;
+    const onTouch = () => {
+      tutorialMouseMovedRef.current = true;
+      tryDismissTutorial();
+    };
+    window.addEventListener('touchstart', onTouch);
+    return () => window.removeEventListener('touchstart', onTouch);
+  }, [isMobile, tryDismissTutorial]);
+
   // Get camera pose config for current splat (memoized to stabilize useEffect deps)
   const fp = currentSplat?.focusPoint ?? DEFAULT_FOCUS_POINT;
   const configFocusPoint = useMemo<[number, number, number]>(
@@ -162,7 +203,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   );
 
   // Parallax: enabled when booted, not in edit mode, and not mobile
-  useParallax(cameraRef, configFocusPoint, configCameraPosition, parallaxAmount, hasBooted && !controlMode && !isMobile);
+  useParallax(cameraRef, configFocusPoint, configCameraPosition, parallaxAmount, hasBooted && !controlMode && !isMobile, handleParallaxMouseMove);
 
   // Initialize CameraControls pose and settings
   useEffect(() => {
@@ -623,12 +664,58 @@ export default function SplatViewer({ config }: SplatViewerProps) {
           ) : (
             <CLISection noBorderTop style={{ padding: '0.4rem 0.6rem' }}>
               <div style={{ opacity: 0.5, fontSize: '0.6rem' }}>
-                [X] EDIT MODE
+                [+/-] ZOOM
               </div>
             </CLISection>
           )}
         </CLIFrame>
       )}
+
+      {/* Tutorial overlay - first splat only */}
+      {tutorialVisible && currentIndex === 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 20,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            zIndex: 20,
+          }}
+        >
+          <CLIFrame>
+            <CLISection
+              noBorderTop
+              style={{
+                padding: '0.5rem 1rem',
+                animation: tutorialDismissing ? 'terminalBlink 1.5s steps(1) forwards' : undefined,
+              }}
+            >
+              <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>
+                {isMobile ? 'SWIPE TO EXPERIENCE IN 3D' : 'MOVE THE MOUSE TO EXPERIENCE IN 3D'}
+              </div>
+            </CLISection>
+          </CLIFrame>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes terminalBlink {
+          0% { opacity: 1; }
+          10% { opacity: 0; }
+          20% { opacity: 1; }
+          30% { opacity: 0; }
+          40% { opacity: 1; }
+          50% { opacity: 0; }
+          60% { opacity: 0.8; }
+          70% { opacity: 0; }
+          80% { opacity: 0.5; }
+          90% { opacity: 0; }
+          100% { opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
