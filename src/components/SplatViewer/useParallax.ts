@@ -4,7 +4,9 @@ import type { ParallaxAmount } from '@/lib/types';
 
 const DEG = Math.PI / 180;
 const SMOOTH_SPEED = 8; // exponential decay rate (~87ms half-life)
-const KEY_DOLLY_STEP = 0.25; // distance change per keypress, proportional to distance
+const KEY_DOLLY_STEP = 0.25; // distance change per keypress, relative to initial distance
+const SCROLL_DOLLY_STEP = 0.08; // scroll is less sensitive than keys
+const DEFAULT_ZOOM_RANGE: [number, number] = [0.01, 1.5];
 
 export function useParallax(
   cameraRef: React.MutableRefObject<PCEntity | null>,
@@ -13,6 +15,7 @@ export function useParallax(
   parallaxAmount: ParallaxAmount,
   enabled: boolean,
   onMouseMove?: () => void,
+  zoomRange?: [number, number],
 ) {
   // Store mouse position in ref to avoid re-renders
   const mouseRef = useRef({ x: 0, y: 0 });
@@ -23,6 +26,9 @@ export function useParallax(
   // Dolly zoom state
   const targetDistance = useRef(0);
   const currentDistance = useRef(0);
+
+  // Track whether we've been enabled before (to distinguish initial mount from edit→view transition)
+  const hasBeenEnabled = useRef(false);
 
   // Compute initial spherical coords from cameraPosition → focusPoint
   const initialRef = useRef({ yaw: 0, pitch: 0, distance: 0 });
@@ -38,6 +44,7 @@ export function useParallax(
     initialRef.current = { yaw, pitch, distance };
     targetDistance.current = distance;
     currentDistance.current = distance;
+    hasBeenEnabled.current = false;
   }, [focusPoint, cameraPosition]);
 
   // Stable callback ref for onMouseMove
@@ -58,28 +65,57 @@ export function useParallax(
     return () => window.removeEventListener('mousemove', onMove);
   }, [enabled]);
 
-  // +/- keys for dolly zoom
+  // +/- keys and scroll wheel for dolly zoom
+  const zoomRangeRef = useRef(zoomRange ?? DEFAULT_ZOOM_RANGE);
+  zoomRangeRef.current = zoomRange ?? DEFAULT_ZOOM_RANGE;
+
   useEffect(() => {
     if (!enabled) return;
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      const step = initialRef.current.distance * KEY_DOLLY_STEP;
-      if (e.key === '=' || e.key === '+') {
-        targetDistance.current = Math.max(0.05, targetDistance.current - step);
-      } else if (e.key === '-' || e.key === '_') {
-        const maxDist = initialRef.current.distance * 1.5;
+    const dolly = (direction: number, stepScale: number) => {
+      const step = initialRef.current.distance * stepScale;
+      const [minMul, maxMul] = zoomRangeRef.current;
+      const minDist = initialRef.current.distance * minMul;
+      const maxDist = initialRef.current.distance * maxMul;
+      if (direction < 0) {
+        targetDistance.current = Math.max(minDist, targetDistance.current - step);
+      } else {
         targetDistance.current = Math.min(maxDist, targetDistance.current + step);
       }
     };
 
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '=' || e.key === '+') dolly(-1, KEY_DOLLY_STEP);
+      else if (e.key === '-' || e.key === '_') dolly(1, KEY_DOLLY_STEP);
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      dolly(e.deltaY > 0 ? 1 : -1, SCROLL_DOLLY_STEP);
+    };
+
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('wheel', onWheel);
+    };
   }, [enabled]);
 
-  // When becoming enabled, initialize currentOffset and distance from entity's actual position
+  // When becoming enabled, initialize currentOffset and distance
   useEffect(() => {
     if (!enabled) return;
 
+    if (!hasBeenEnabled.current) {
+      // First enable (initial load): start at rest position with zero offset
+      hasBeenEnabled.current = true;
+      currentOffset.current.yaw = 0;
+      currentOffset.current.pitch = 0;
+      lastTime.current = 0;
+      return;
+    }
+
+    // Re-enable after edit mode: compute offset from entity's actual position
     const entity = cameraRef.current;
     if (!entity) return;
 
@@ -87,7 +123,6 @@ export function useParallax(
     const { yaw: restYaw, pitch: restPitch } = initialRef.current;
     const focus = new Vec3(focusPoint[0], focusPoint[1], focusPoint[2]);
 
-    // Compute current spherical offset relative to rest position
     const dx = pos.x - focus.x;
     const dy = pos.y - focus.y;
     const dz = pos.z - focus.z;
@@ -163,9 +198,9 @@ export function useParallax(
       const cc = scripts?.cameraControls;
       if (cc?._pose) {
         const poseAngles = cc._pose.angles;
-        // CameraControls convention: angles.x = pitch (deg), angles.y = yaw (deg)
-        poseAngles.x = -pitch / DEG;
-        poseAngles.y = -yaw / DEG;
+        // CameraControls: direction = (-sin(yaw)*cos(pitch), sin(pitch), -cos(yaw)*cos(pitch))
+        poseAngles.x = pitch / DEG;
+        poseAngles.y = yaw / DEG;
         cc._pose.position.x = camX;
         cc._pose.position.y = camY;
         cc._pose.position.z = camZ;

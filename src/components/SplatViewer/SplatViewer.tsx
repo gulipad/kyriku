@@ -20,6 +20,7 @@ interface SplatConfig {
   cameraPosition: [number, number, number];
   focusPoint: [number, number, number];
   parallaxAmount?: ParallaxAmount;
+  zoomRange?: [number, number];
 }
 
 interface Settings {
@@ -203,7 +204,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   );
 
   // Parallax: enabled when booted, not in edit mode, and not mobile
-  useParallax(cameraRef, configFocusPoint, configCameraPosition, parallaxAmount, hasBooted && !controlMode && !isMobile, handleParallaxMouseMove);
+  useParallax(cameraRef, configFocusPoint, configCameraPosition, parallaxAmount, hasBooted && !controlMode && !isMobile, handleParallaxMouseMove, currentSplat?.zoomRange);
 
   // Initialize CameraControls pose and settings
   useEffect(() => {
@@ -225,10 +226,19 @@ export default function SplatViewer({ config }: SplatViewerProps) {
           cameraControls.reset(focus, position);
         }
 
-        // Start in view mode: controls disabled
-        cameraControls.enabled = false;
+        // Match current mode
+        cameraControls.enabled = controlMode;
 
-        cameraControls.rotateSpeed = 0.08;
+        if (controlMode) {
+          const poseAngles = cameraControls._pose?.angles;
+          if (poseAngles) {
+            cameraControls.pitchRange = new Vec2(poseAngles.x - 90, poseAngles.x + 90);
+            cameraControls.yawRange = new Vec2(-Infinity, Infinity);
+          }
+          cameraControls.rotateSpeed = 0.3;
+        } else {
+          cameraControls.rotateSpeed = 0.08;
+        }
         initialized = true;
       }
     };
@@ -664,7 +674,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
           ) : (
             <CLISection noBorderTop style={{ padding: '0.4rem 0.6rem' }}>
               <div style={{ opacity: 0.5, fontSize: '0.6rem' }}>
-                [+/-] ZOOM
+                [+/-] OR SCROLL TO ZOOM
               </div>
             </CLISection>
           )}
@@ -694,7 +704,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
               }}
             >
               <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>
-                {isMobile ? 'SWIPE TO EXPERIENCE IN 3D' : 'MOVE THE MOUSE TO EXPERIENCE IN 3D'}
+                {isMobile ? 'SWIPE TO EXPERIENCE IN 3D' : 'MOVE THE MOUSE TO EXPERIENCE IN 3D | ARROW KEYS TO CHANGE'}
               </div>
             </CLISection>
           </CLIFrame>

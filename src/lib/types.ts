@@ -12,6 +12,7 @@ export interface SplatConfig {
   cameraPosition: [number, number, number];
   focusPoint: [number, number, number];
   parallaxAmount?: ParallaxAmount;
+  zoomRange?: [number, number]; // [minMultiplier, maxMultiplier] of initial distance
 }
 
 export interface Settings {

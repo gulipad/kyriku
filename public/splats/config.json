@@ -26,9 +26,10 @@
       "location": "Ngozi, Burundi",
       "splatFile": "closeup.sog",
       "fov": 14,
-      "cameraPosition": [-0.55, 0.34, 1.37],
-      "focusPoint": [0.56, -0.3, -2.64],
-      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+      "cameraPosition": [-0.66, 0.4, 1.33],
+      "focusPoint": [0.48, -0.33, -2.66],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 },
+      "zoomRange": [0.7, 1.5]
     },
     {
       "title": "MUAC",
@@ -38,7 +39,8 @@
       "fov": 16,
       "cameraPosition": [0.15, -0.11, 1.04],
       "focusPoint": [0.15, -0.12, -1.35],
-      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+      "parallaxAmount": { "yaw": 8, "pitch": 4 },
+      "zoomRange": [0.4, 1.5]
     },
     {
       "title": "Muletas",
