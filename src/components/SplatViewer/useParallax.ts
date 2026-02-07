@@ -9,9 +9,12 @@ const INTRO_DURATION = 1.2; // seconds to ramp from intro to normal speed
 const INTRO_YAW = -5; // initial yaw offset in degrees
 const INTRO_PITCH = -1.5; // initial pitch offset in degrees
 const INTRO_ZOOM = 0.88; // initial distance multiplier (closer = more zoom)
+const INTRO_ZOOM_MOBILE = 1.15; // mobile starts zoomed out instead
 const KEY_DOLLY_STEP = 0.25; // distance change per keypress, relative to initial distance
 const SCROLL_DOLLY_STEP = 0.08; // scroll is less sensitive than keys
 const DEFAULT_ZOOM_RANGE: [number, number] = [0.01, 1.5];
+
+const TOUCH_SENSITIVITY = 4; // drag 25% of screen = full parallax
 
 export function useParallax(
   cameraRef: React.MutableRefObject<PCEntity | null>,
@@ -21,12 +24,18 @@ export function useParallax(
   enabled: boolean,
   onMouseMove?: () => void,
   zoomRange?: [number, number],
+  mobile?: boolean,
 ) {
-  // Store mouse position in ref to avoid re-renders
+  // Store mouse/touch position in ref to avoid re-renders
   const mouseRef = useRef({ x: 0, y: 0 });
   const currentOffset = useRef({ yaw: 0, pitch: 0 });
   const lastTime = useRef(0);
   const rafId = useRef(0);
+
+  // Touch state
+  const touchStartRef = useRef({ x: 0, y: 0 });
+  const pinchStartDist = useRef(0);
+  const pinchStartZoom = useRef(0);
 
   // Dolly zoom state
   const targetDistance = useRef(0);
@@ -70,6 +79,61 @@ export function useParallax(
 
     window.addEventListener('mousemove', onMove);
     return () => window.removeEventListener('mousemove', onMove);
+  }, [enabled]);
+
+  // Touch tracking (single-finger drag for parallax, pinch for zoom)
+  useEffect(() => {
+    if (!enabled) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchStartDist.current = Math.sqrt(dx * dx + dy * dy);
+        pinchStartZoom.current = targetDistance.current;
+        // Reset parallax during pinch
+        mouseRef.current.x = 0;
+        mouseRef.current.y = 0;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault(); // prevent scrolling
+      if (e.touches.length === 1) {
+        const dx = (e.touches[0].clientX - touchStartRef.current.x) / window.innerWidth * TOUCH_SENSITIVITY;
+        const dy = (e.touches[0].clientY - touchStartRef.current.y) / window.innerHeight * TOUCH_SENSITIVITY;
+        mouseRef.current.x = Math.max(-1, Math.min(1, dx));
+        mouseRef.current.y = Math.max(-1, Math.min(1, dy));
+      } else if (e.touches.length === 2 && pinchStartDist.current > 0) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const scale = pinchStartDist.current / dist; // pinch in = zoom out
+        const [minMul, maxMul] = zoomRangeRef.current;
+        const minDist = initialRef.current.distance * minMul;
+        const maxDist = initialRef.current.distance * maxMul;
+        targetDistance.current = Math.max(minDist, Math.min(maxDist, pinchStartZoom.current * scale));
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        mouseRef.current.x = 0;
+        mouseRef.current.y = 0;
+        pinchStartDist.current = 0;
+      }
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
   }, [enabled]);
 
   // +/- keys and scroll wheel for dolly zoom
@@ -118,7 +182,7 @@ export function useParallax(
       hasBeenEnabled.current = true;
       currentOffset.current.yaw = INTRO_YAW;
       currentOffset.current.pitch = INTRO_PITCH;
-      currentDistance.current = initialRef.current.distance * INTRO_ZOOM;
+      currentDistance.current = initialRef.current.distance * (mobile ? INTRO_ZOOM_MOBILE : INTRO_ZOOM);
       introElapsed.current = 0;
       lastTime.current = 0;
       return;

@@ -15,10 +15,12 @@ const translations = {
   en: {
     zoomHint: '[+/-] OR SCROLL TO ZOOM',
     changePicture: '[←/→] CHANGE PICTURE',
+    doubleTap: 'DOUBLE TAP TO CHANGE',
   },
   es: {
     zoomHint: '[+/-] O SCROLL PARA ZOOM',
     changePicture: '[←/→] CAMBIAR IMAGEN',
+    doubleTap: 'DOBLE TOQUE PARA CAMBIAR',
   },
 } as const;
 
@@ -197,8 +199,8 @@ export default function SplatViewer({ config }: SplatViewerProps) {
     [pa.yaw, pa.pitch]
   );
 
-  // Parallax: enabled when booted, not in edit mode, and not mobile
-  useParallax(cameraRef, configFocusPoint, configCameraPosition, parallaxAmount, hasBooted && !controlMode && !isMobile, undefined, currentSplat?.zoomRange);
+  // Parallax: enabled when booted and not in edit mode
+  useParallax(cameraRef, configFocusPoint, configCameraPosition, parallaxAmount, hasBooted && !controlMode, undefined, currentSplat?.zoomRange, isMobile);
 
   // Initialize CameraControls pose and settings
   useEffect(() => {
@@ -402,11 +404,26 @@ export default function SplatViewer({ config }: SplatViewerProps) {
     // Double tap to change splat on mobile
     let lastTap = 0;
     let wasMultiTouch = false;
+    let wasDrag = false;
+    let touchStartPos = { x: 0, y: 0 };
+    const DRAG_THRESHOLD = 15; // px
 
     const handleTouchStart = (e: TouchEvent) => {
-      // Track if multiple fingers are used (panning gesture)
       if (e.touches.length > 1) {
         wasMultiTouch = true;
+      } else if (e.touches.length === 1) {
+        touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        wasDrag = false;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1 && !wasDrag) {
+        const dx = e.touches[0].clientX - touchStartPos.x;
+        const dy = e.touches[0].clientY - touchStartPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+          wasDrag = true;
+        }
       }
     };
 
@@ -416,9 +433,10 @@ export default function SplatViewer({ config }: SplatViewerProps) {
       // Ignore if other fingers are still down
       if (e.touches.length > 0) return;
 
-      // Ignore if this was a multi-touch gesture (panning)
-      if (wasMultiTouch) {
+      // Ignore if this was a multi-touch gesture or a drag
+      if (wasMultiTouch || wasDrag) {
         wasMultiTouch = false;
+        wasDrag = false;
         lastTap = 0;
         return;
       }
@@ -438,6 +456,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
     window.addEventListener('keydown', handleKeyDown);
     if (isMobile) {
       window.addEventListener('touchstart', handleTouchStart);
+      window.addEventListener('touchmove', handleTouchMove);
       window.addEventListener('touchend', handleTouchEnd);
     }
 
@@ -445,6 +464,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
       window.removeEventListener('keydown', handleKeyDown);
       if (isMobile) {
         window.removeEventListener('touchstart', handleTouchStart);
+        window.removeEventListener('touchmove', handleTouchMove);
         window.removeEventListener('touchend', handleTouchEnd);
       }
     };
@@ -552,6 +572,18 @@ export default function SplatViewer({ config }: SplatViewerProps) {
             )}
           </div>
         </CLISection>
+        {isMobile && (
+          <CLISection style={{ padding: '0.4rem 0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ opacity: 0.5, fontSize: '0.55rem' }}>{t.doubleTap}</span>
+              <span style={{ pointerEvents: 'auto' }}>
+                <CLIButton onClick={() => setLang(l => l === 'en' ? 'es' : 'en')}>
+                  {lang === 'en' ? 'EN/es' : 'en/ES'}
+                </CLIButton>
+              </span>
+            </div>
+          </CLISection>
+        )}
       </CLIFrame>
 
       {/* Edit mode panel - bottom right */}
