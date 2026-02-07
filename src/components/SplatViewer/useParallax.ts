@@ -10,7 +10,7 @@ const INTRO_YAW = -5; // initial yaw offset in degrees
 const INTRO_PITCH = -1.5; // initial pitch offset in degrees
 const INTRO_ZOOM = 0.88; // initial distance multiplier (closer = more zoom)
 const KEY_DOLLY_STEP = 0.25; // distance change per keypress, relative to initial distance
-const SCROLL_DOLLY_STEP = 0.08; // scroll is less sensitive than keys
+const SCROLL_DOLLY_STEP = 0.02; // scroll is less sensitive than keys
 const DEFAULT_ZOOM_RANGE: [number, number] = [0.01, 1.5];
 
 const TOUCH_SENSITIVITY = 4; // drag 25% of screen = full parallax
