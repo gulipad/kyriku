@@ -116,23 +116,45 @@ function MobilePerformance() {
 
     // Cap framerate
     app.autoRender = false;
-    let frameCount = 0;
+    let renderRequestCount = 0;
+    let actualRenderCount = 0;
+    let updateTickCount = 0;
     let lastLog = performance.now();
+
+    // Count actual renders by hooking into the framerender event
+    const onRender = () => { actualRenderCount++; };
+    app.on('framerender', onRender);
+
+    // Count update ticks (runs every rAF even when not rendering)
+    const onUpdate = () => { updateTickCount++; };
+    app.on('update', onUpdate);
+
     const interval = setInterval(() => {
       app.renderNextFrame = true;
-      frameCount++;
+      renderRequestCount++;
       const now = performance.now();
       if (now - lastLog >= 3000) {
-        const fps = (frameCount / ((now - lastLog) / 1000)).toFixed(1);
+        const elapsed = (now - lastLog) / 1000;
         const canvas = app.graphicsDevice.canvas as HTMLCanvasElement;
-        console.log(`[perf] ${fps} fps | canvas: ${canvas.width}x${canvas.height} | css: ${canvas.clientWidth}x${canvas.clientHeight} | dpr: ${window.devicePixelRatio} | maxPR: ${app.graphicsDevice.maxPixelRatio}`);
-        frameCount = 0;
+        console.log(
+          `[perf] requested: ${(renderRequestCount / elapsed).toFixed(1)} fps` +
+          ` | actual renders: ${(actualRenderCount / elapsed).toFixed(1)} fps` +
+          ` | update ticks: ${(updateTickCount / elapsed).toFixed(1)}/s` +
+          ` | canvas: ${canvas.width}x${canvas.height}` +
+          ` | dpr: ${window.devicePixelRatio}` +
+          ` | maxPR: ${app.graphicsDevice.maxPixelRatio}`
+        );
+        renderRequestCount = 0;
+        actualRenderCount = 0;
+        updateTickCount = 0;
         lastLog = now;
       }
     }, 1000 / MOBILE_TARGET_FPS);
 
     return () => {
       clearInterval(interval);
+      app.off('framerender', onRender);
+      app.off('update', onUpdate);
       app.autoRender = true;
     };
   }, [app]);
