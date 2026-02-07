@@ -15,6 +15,9 @@ const DEFAULT_ZOOM_RANGE: [number, number] = [0.01, 1.5];
 
 const TOUCH_SENSITIVITY = 4; // drag 25% of screen = full parallax
 
+const SETTLE_THRESHOLD = 0.01; // degrees – below this the camera is "idle"
+const DISTANCE_SETTLE_THRESHOLD = 0.001;
+
 export function useParallax(
   cameraRef: React.MutableRefObject<PCEntity | null>,
   focusPoint: [number, number, number],
@@ -24,6 +27,7 @@ export function useParallax(
   onMouseMove?: () => void,
   zoomRange?: [number, number],
   mobile?: boolean,
+  idleRef?: React.MutableRefObject<boolean>,
 ) {
   // Store mouse/touch position in ref to avoid re-renders
   const mouseRef = useRef({ x: 0, y: 0 });
@@ -224,6 +228,7 @@ export function useParallax(
       // Reset mouse to center when disabled so re-enable starts smooth
       mouseRef.current.x = 0;
       mouseRef.current.y = 0;
+      if (idleRef) idleRef.current = false; // force renders when parallax is off (e.g. edit mode)
       return;
     }
 
@@ -289,6 +294,15 @@ export function useParallax(
         cc._pose.position.y = camY;
         cc._pose.position.z = camZ;
         cc._pose.distance = distance;
+      }
+
+      // Signal whether the camera has settled (for render throttling)
+      if (idleRef) {
+        idleRef.current =
+          introElapsed.current === -1 &&
+          Math.abs(currentOffset.current.yaw - targetYaw) < SETTLE_THRESHOLD &&
+          Math.abs(currentOffset.current.pitch - targetPitch) < SETTLE_THRESHOLD &&
+          Math.abs(currentDistance.current - targetDistance.current) < DISTANCE_SETTLE_THRESHOLD;
       }
 
       rafId.current = requestAnimationFrame(animate);
