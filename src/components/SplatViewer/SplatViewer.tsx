@@ -516,7 +516,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
 
   if (!hasBooted) {
     return (
-      <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+      <div style={{ width: '100vw', height: '100dvh', position: 'relative' }}>
         <CLILoader onReady={handleBootComplete} isMobile={isMobile} lang={lang} />
       </div>
     );
@@ -524,7 +524,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
 
   // Step 2+: Show splat viewer (same for first and all subsequent splats)
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+    <div style={{ width: '100vw', height: '100dvh', position: 'relative' }}>
       <Application graphicsDeviceOptions={GRAPHICS_DEVICE_OPTIONS}>
         {isMobile && <MobilePerformance />}
         <SplatScene
