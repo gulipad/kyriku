@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Kyriku',
-  description: 'A 3D memory visualizer.',
+  description: 'Una exploración 3D de los proyectos de Fundación Kyriku.',
 };
 
 export default function RootLayout({

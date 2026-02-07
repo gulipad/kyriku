@@ -181,7 +181,9 @@ export function useParallax(
       hasBeenEnabled.current = true;
       currentOffset.current.yaw = INTRO_YAW;
       currentOffset.current.pitch = INTRO_PITCH;
-      currentDistance.current = initialRef.current.distance * (mobile ? zoomRangeRef.current[1] : INTRO_ZOOM);
+      const mobileMaxDist = initialRef.current.distance * zoomRangeRef.current[1];
+      currentDistance.current = mobile ? mobileMaxDist : initialRef.current.distance * INTRO_ZOOM;
+      if (mobile) targetDistance.current = mobileMaxDist;
       introElapsed.current = 0;
       lastTime.current = 0;
       return;
