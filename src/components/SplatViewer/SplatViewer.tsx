@@ -145,7 +145,7 @@ interface SplatViewerProps {
 }
 
 export default function SplatViewer({ config }: SplatViewerProps) {
-  const [hasBooted, setHasBooted] = useState(true); // TODO: restore to false to re-enable boot animation
+  const [hasBooted, setHasBooted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lang, setLang] = useState<Lang>(() =>
     typeof navigator !== 'undefined' && navigator.language.startsWith('es') ? 'es' : 'en'
@@ -497,14 +497,13 @@ export default function SplatViewer({ config }: SplatViewerProps) {
     parallaxAmount,
   }, null, 2) : '';
 
-  // Step 1: Boot animation (skipped during dev)
-  // if (!hasBooted) {
-  //   return (
-  //     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-  //       <CLILoader onReady={handleBootComplete} isMobile={isMobile} lang={lang} />
-  //     </div>
-  //   );
-  // }
+  if (!hasBooted) {
+    return (
+      <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+        <CLILoader onReady={handleBootComplete} isMobile={isMobile} lang={lang} />
+      </div>
+    );
+  }
 
   // Step 2+: Show splat viewer (same for first and all subsequent splats)
   return (

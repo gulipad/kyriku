@@ -9,7 +9,6 @@ const INTRO_DURATION = 1.2; // seconds to ramp from intro to normal speed
 const INTRO_YAW = -5; // initial yaw offset in degrees
 const INTRO_PITCH = -1.5; // initial pitch offset in degrees
 const INTRO_ZOOM = 0.88; // initial distance multiplier (closer = more zoom)
-const INTRO_ZOOM_MOBILE = 1.15; // mobile starts zoomed out instead
 const KEY_DOLLY_STEP = 0.25; // distance change per keypress, relative to initial distance
 const SCROLL_DOLLY_STEP = 0.08; // scroll is less sensitive than keys
 const DEFAULT_ZOOM_RANGE: [number, number] = [0.01, 1.5];
@@ -182,7 +181,7 @@ export function useParallax(
       hasBeenEnabled.current = true;
       currentOffset.current.yaw = INTRO_YAW;
       currentOffset.current.pitch = INTRO_PITCH;
-      currentDistance.current = initialRef.current.distance * (mobile ? INTRO_ZOOM_MOBILE : INTRO_ZOOM);
+      currentDistance.current = initialRef.current.distance * (mobile ? zoomRangeRef.current[1] : INTRO_ZOOM);
       introElapsed.current = 0;
       lastTime.current = 0;
       return;

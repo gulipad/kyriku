@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, CSSProperties } from "react";
+import { useState, useEffect, useMemo, CSSProperties } from "react";
 import { CLIFrame, CLISection } from "./CLIFrame";
 import type { Lang } from "@/lib/types";
 
@@ -10,10 +10,18 @@ const linkStyle: CSSProperties = {
 };
 
 type BootMessage =
-  | { type: "header"; text: string }
+  | { type: "header" }
   | { type: "subtitle" }
   | { type: "spacer" }
   | { type: "ok"; text: string };
+
+const KYRIKU_ASCII = [
+  "█   █ █   █ ████  █████ █   █ █   █",
+  "█  █   █ █  █   █   █   █  █  █   █",
+  "███     █   ████    █   ███   █   █",
+  "█  █    █   █ █     █   █  █  █   █",
+  "█   █   █   █  █  █████ █   █  ███",
+].join("\n");
 
 const bootStatusMessages: Record<Lang, string[]> = {
   en: [
@@ -25,7 +33,6 @@ const bootStatusMessages: Record<Lang, string[]> = {
     "Preparing gaussian splat decoder",
     "Warming up the pixels",
     "Convincing electrons to cooperate",
-    "Celebrating 2 years together",
     "Loading 3D memories",
   ],
   es: [
@@ -37,14 +44,13 @@ const bootStatusMessages: Record<Lang, string[]> = {
     "Preparando decodificador de splats",
     "Calentando los píxeles",
     "Convenciendo a los electrones",
-    "Celebrando 2 años juntos",
     "Cargando recuerdos 3D",
   ],
 };
 
 function buildBootMessages(lang: Lang): BootMessage[] {
   return [
-    { type: "header", text: "KYRIKU v1.0" },
+    { type: "header" },
     { type: "subtitle" },
     { type: "spacer" },
     ...bootStatusMessages[lang].map((text): BootMessage => ({ type: "ok", text })),
@@ -81,7 +87,7 @@ interface CLILoaderProps {
 }
 
 export function CLILoader({ onReady, isMobile, lang = "en" }: CLILoaderProps) {
-  const messages = buildBootMessages(lang);
+  const messages = useMemo(() => buildBootMessages(lang), [lang]);
   const ui = loaderUi[lang];
   const [visibleLines, setVisibleLines] = useState(0);
   const [cursor, setCursor] = useState(true);
@@ -212,12 +218,18 @@ export function CLILoader({ onReady, isMobile, lang = "en" }: CLILoaderProps) {
             }
             if (msg.type === "header") {
               return (
-                <div
+                <pre
                   key={index}
-                  style={{ fontWeight: "bold", marginBottom: "0.15rem" }}
+                  style={{
+                    margin: 0,
+                    fontSize: "0.45rem",
+                    lineHeight: 1.2,
+                    fontFamily: "inherit",
+                    marginBottom: "0.5rem",
+                  }}
                 >
-                  {msg.text}
-                </div>
+                  {KYRIKU_ASCII}
+                </pre>
               );
             }
             if (msg.type === "subtitle") {
