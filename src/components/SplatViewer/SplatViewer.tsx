@@ -9,24 +9,7 @@ import { Vec2, Vec3, type Entity as PCEntity } from 'playcanvas';
 import { CLILoader, CLIMiniLoader } from '@/components/UI/CLILoader';
 import { CLIFrame, CLISection, CLIButton } from '@/components/UI/CLIFrame';
 import { useParallax } from './useParallax';
-import type { ParallaxAmount } from '@/lib/types';
-
-interface SplatConfig {
-  splatFile: string;
-  title: string;
-  date?: string;
-  description?: string;
-  descriptionEs?: string;
-  town?: string;
-  coordinates?: [number, number];
-  fov?: number;
-  cameraPosition: [number, number, number];
-  focusPoint: [number, number, number];
-  parallaxAmount?: ParallaxAmount;
-  zoomRange?: [number, number];
-}
-
-type Lang = 'en' | 'es';
+import type { Config, Lang, ParallaxAmount } from '@/lib/types';
 
 const translations = {
   en: {
@@ -45,11 +28,6 @@ const translations = {
   },
 } as const;
 
-interface Settings {
-  fov: number;
-  parallaxAmount?: ParallaxAmount;
-}
-
 const GRAPHICS_DEVICE_OPTIONS = {
   antialias: false,
   alpha: false,
@@ -58,9 +36,50 @@ const GRAPHICS_DEVICE_OPTIONS = {
 const SPLAT_ROTATION: [number, number, number] = [180, 0, 0];
 const DEFAULT_CAMERA_POSITION: [number, number, number] = [0, 0, 3];
 const DEFAULT_FOCUS_POINT: [number, number, number] = [0, 0, 0];
-const DEFAULT_CONFIG_CAMERA_POSITION: [number, number, number] = [0, 0, 3];
 
 const DEFAULT_PARALLAX_AMOUNT: ParallaxAmount = { yaw: 8, pitch: 4 };
+
+const EDIT_SECTION_PADDING = { padding: '0.6rem 0.6rem 0.4rem' } as const;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getCameraControls(cameraRef: React.MutableRefObject<PCEntity | null>): any {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (cameraRef.current?.script as any)?.cameraControls ?? null;
+}
+
+interface CameraState {
+  fov: number;
+  cameraPosition: [number, number, number];
+  focusPoint: [number, number, number];
+  distance: number;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function readCameraState(poseObj: any, fov: number): CameraState {
+  const camPos = poseObj.position;
+  const dist = poseObj.distance;
+  const pitch = poseObj.angles.x * Math.PI / 180;
+  const yaw = poseObj.angles.y * Math.PI / 180;
+
+  const dirX = -Math.sin(yaw) * Math.cos(pitch);
+  const dirY = Math.sin(pitch);
+  const dirZ = -Math.cos(yaw) * Math.cos(pitch);
+
+  return {
+    fov: Math.round(fov),
+    cameraPosition: [
+      parseFloat(camPos.x.toFixed(2)),
+      parseFloat(camPos.y.toFixed(2)),
+      parseFloat(camPos.z.toFixed(2)),
+    ],
+    focusPoint: [
+      parseFloat((camPos.x + dirX * dist).toFixed(2)),
+      parseFloat((camPos.y + dirY * dist).toFixed(2)),
+      parseFloat((camPos.z + dirZ * dist).toFixed(2)),
+    ],
+    distance: parseFloat(dist.toFixed(2)),
+  };
+}
 
 function formatCoord(lat: number, lon: number): string {
   const latDir = lat >= 0 ? 'N' : 'S';
@@ -126,17 +145,7 @@ const SplatScene = memo(function SplatScene({
 });
 
 interface SplatViewerProps {
-  config: {
-    splats: SplatConfig[];
-    settings: Settings;
-  };
-}
-
-interface LiveValues {
-  fov: number;
-  cameraPosition: [number, number, number];
-  focusPoint: [number, number, number];
-  distance: number;
+  config: Config;
 }
 
 export default function SplatViewer({ config }: SplatViewerProps) {
@@ -149,7 +158,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   const [controlMode, setControlMode] = useState(false);
   const [activeFov, setActiveFov] = useState<number | null>(null);
   const [activeParallax, setActiveParallax] = useState<ParallaxAmount | null>(null);
-  const [liveValues, setLiveValues] = useState<LiveValues | null>(null);
+  const [liveValues, setLiveValues] = useState<CameraState | null>(null);
   const [loaderVisible, setLoaderVisible] = useState(true);
   const [tutorialVisible, setTutorialVisible] = useState(true);
   const [tutorialDismissing, setTutorialDismissing] = useState(false);
@@ -222,7 +231,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
     () => [fp[0], fp[1], fp[2]],
     [fp[0], fp[1], fp[2]]
   );
-  const cp = currentSplat?.cameraPosition ?? DEFAULT_CONFIG_CAMERA_POSITION;
+  const cp = currentSplat?.cameraPosition ?? DEFAULT_CAMERA_POSITION;
   const configCameraPosition = useMemo<[number, number, number]>(
     () => [cp[0], cp[1], cp[2]],
     [cp[0], cp[1], cp[2]]
@@ -246,9 +255,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
     let animationId: number;
 
     const initPose = () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const scripts = cameraRef.current?.script as any;
-      const cameraControls = scripts?.cameraControls;
+      const cameraControls = getCameraControls(cameraRef);
       if (cameraControls && !initialized) {
         const focus = new Vec3(configFocusPoint[0], configFocusPoint[1], configFocusPoint[2]);
         const position = new Vec3(configCameraPosition[0], configCameraPosition[1], configCameraPosition[2]);
@@ -292,9 +299,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   // Toggle CameraControls on controlMode change
   useEffect(() => {
     if (!hasBooted) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const scripts = cameraRef.current?.script as any;
-    const cameraControls = scripts?.cameraControls;
+    const cameraControls = getCameraControls(cameraRef);
     if (!cameraControls) return;
 
     if (controlMode) {
@@ -337,35 +342,11 @@ export default function SplatViewer({ config }: SplatViewerProps) {
       const entity = cameraRef.current;
       if (!entity) return;
 
-      const fov = activeFov ?? entity.camera?.fov ?? settings.fov;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const scripts = entity.script as any;
-      const poseObj = scripts?.cameraControls?._pose;
+      const poseObj = getCameraControls(cameraRef)?._pose;
       if (!poseObj) return;
 
-      const camPos = poseObj.position;
-      const dist = poseObj.distance;
-      const pitch = poseObj.angles.x * Math.PI / 180;
-      const yaw = poseObj.angles.y * Math.PI / 180;
-
-      const dirX = -Math.sin(yaw) * Math.cos(pitch);
-      const dirY = Math.sin(pitch);
-      const dirZ = -Math.cos(yaw) * Math.cos(pitch);
-
-      setLiveValues({
-        fov: Math.round(fov),
-        cameraPosition: [
-          parseFloat(camPos.x.toFixed(2)),
-          parseFloat(camPos.y.toFixed(2)),
-          parseFloat(camPos.z.toFixed(2)),
-        ],
-        focusPoint: [
-          parseFloat((camPos.x + dirX * dist).toFixed(2)),
-          parseFloat((camPos.y + dirY * dist).toFixed(2)),
-          parseFloat((camPos.z + dirZ * dist).toFixed(2)),
-        ],
-        distance: parseFloat(dist.toFixed(2)),
-      });
+      const fov = activeFov ?? entity.camera?.fov ?? settings.fov;
+      setLiveValues(readCameraState(poseObj, fov));
     };
 
     poll();
@@ -390,44 +371,16 @@ export default function SplatViewer({ config }: SplatViewerProps) {
     const entity = cameraRef.current;
     if (!entity) return;
 
+    const poseObj = getCameraControls(cameraRef)?._pose;
+    if (!poseObj) return;
+
     const fov = entity.camera?.fov ?? settings.fov;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const scripts = entity.script as any;
-    const cameraControls = scripts?.cameraControls;
-    const poseObj = cameraControls?._pose;
-
-    if (poseObj) {
-      const camPos = poseObj.position;
-      const dist = poseObj.distance;
-      const pitch = poseObj.angles.x * Math.PI / 180;
-      const yaw = poseObj.angles.y * Math.PI / 180;
-
-      // Calculate focus point from camera position + direction * distance
-      const dirX = -Math.sin(yaw) * Math.cos(pitch);
-      const dirY = Math.sin(pitch);  // Positive pitch looks down in CameraControls
-      const dirZ = -Math.cos(yaw) * Math.cos(pitch);
-
-      const focusPt = {
-        x: camPos.x + dirX * dist,
-        y: camPos.y + dirY * dist,
-        z: camPos.z + dirZ * dist,
-      };
-
-      const output = {
-        fov: Math.round(fov),
-        cameraPosition: [
-          parseFloat(camPos.x.toFixed(2)),
-          parseFloat(camPos.y.toFixed(2)),
-          parseFloat(camPos.z.toFixed(2)),
-        ],
-        focusPoint: [
-          parseFloat(focusPt.x.toFixed(2)),
-          parseFloat(focusPt.y.toFixed(2)),
-          parseFloat(focusPt.z.toFixed(2)),
-        ],
-      };
-      console.log('Current camera state:', JSON.stringify(output, null, 2));
-    }
+    const state = readCameraState(poseObj, fov);
+    console.log('Current camera state:', JSON.stringify({
+      fov: state.fov,
+      cameraPosition: state.cameraPosition,
+      focusPoint: state.focusPoint,
+    }, null, 2));
   }, [settings.fov]);
 
   // Nudge FOV
@@ -442,19 +395,14 @@ export default function SplatViewer({ config }: SplatViewerProps) {
 
   // Nudge distance
   const nudgeDistance = useCallback((delta: number) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const scripts = cameraRef.current?.script as any;
-    const poseObj = scripts?.cameraControls?._pose;
+    const poseObj = getCameraControls(cameraRef)?._pose;
     if (!poseObj) return;
     poseObj.distance = Math.max(0.1, poseObj.distance + delta);
   }, []);
 
   // Nudge camera position on an axis
   const nudgePosition = useCallback((axis: 'x' | 'y' | 'z', delta: number) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const scripts = cameraRef.current?.script as any;
-    const cc = scripts?.cameraControls;
-    const poseObj = cc?._pose;
+    const poseObj = getCameraControls(cameraRef)?._pose;
     if (!poseObj) return;
     poseObj.position[axis] += delta;
   }, []);
@@ -569,8 +517,12 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   const splatUrl = `/splats/${currentSplat.splatFile}`;
   const splatFov = currentSplat.fov ?? settings.fov;
 
-  // Effective parallax for display
-  const effectiveParallax = activeParallax ?? currentSplat?.parallaxAmount ?? settings.parallaxAmount ?? DEFAULT_PARALLAX_AMOUNT;
+  const editConfigJson = liveValues ? JSON.stringify({
+    fov: liveValues.fov,
+    cameraPosition: liveValues.cameraPosition,
+    focusPoint: liveValues.focusPoint,
+    parallaxAmount,
+  }, null, 2) : '';
 
   // Step 1: Boot animation (skipped during dev)
   // if (!hasBooted) {
@@ -663,10 +615,10 @@ export default function SplatViewer({ config }: SplatViewerProps) {
         >
           {controlMode && liveValues ? (
             <>
-              <CLISection noBorderTop label="fov" style={{ paddingTop: '0.6rem', paddingRight: '0.6rem', paddingBottom: '0.4rem', paddingLeft: '0.6rem' }}>
+              <CLISection noBorderTop label="fov" style={EDIT_SECTION_PADDING}>
                 <NudgeRow value={liveValues.fov} onMinus={() => nudgeFov(-1)} onPlus={() => nudgeFov(1)} />
               </CLISection>
-              <CLISection label="position" style={{ paddingTop: '0.6rem', paddingRight: '0.6rem', paddingBottom: '0.4rem', paddingLeft: '0.6rem' }}>
+              <CLISection label="position" style={EDIT_SECTION_PADDING}>
                 {(['x', 'y', 'z'] as const).map((axis, i) => (
                   <NudgeRow
                     key={axis}
@@ -677,47 +629,34 @@ export default function SplatViewer({ config }: SplatViewerProps) {
                   />
                 ))}
               </CLISection>
-              <CLISection label="distance" style={{ paddingTop: '0.6rem', paddingRight: '0.6rem', paddingBottom: '0.4rem', paddingLeft: '0.6rem' }}>
+              <CLISection label="distance" style={EDIT_SECTION_PADDING}>
                 <NudgeRow value={liveValues.distance} onMinus={() => nudgeDistance(-0.1)} onPlus={() => nudgeDistance(0.1)} />
               </CLISection>
-              <CLISection label="parallax" style={{ paddingTop: '0.6rem', paddingRight: '0.6rem', paddingBottom: '0.4rem', paddingLeft: '0.6rem' }}>
+              <CLISection label="parallax" style={EDIT_SECTION_PADDING}>
                 <NudgeRow
                   label="Y"
-                  value={effectiveParallax.yaw}
+                  value={parallaxAmount.yaw}
                   onMinus={() => nudgeParallax('yaw', -0.5)}
                   onPlus={() => nudgeParallax('yaw', 0.5)}
                 />
                 <NudgeRow
                   label="P"
-                  value={effectiveParallax.pitch}
+                  value={parallaxAmount.pitch}
                   onMinus={() => nudgeParallax('pitch', -0.5)}
                   onPlus={() => nudgeParallax('pitch', 0.5)}
                 />
               </CLISection>
-              <CLISection label="config" style={{ paddingTop: '0.6rem', paddingRight: '0.6rem', paddingBottom: '0.4rem', paddingLeft: '0.6rem' }}>
+              <CLISection label="config" style={EDIT_SECTION_PADDING}>
                 <pre style={{ fontSize: '0.55rem', opacity: 0.7, margin: 0, whiteSpace: 'pre-wrap' }}>
-{JSON.stringify({
-  fov: liveValues.fov,
-  cameraPosition: liveValues.cameraPosition,
-  focusPoint: liveValues.focusPoint,
-  parallaxAmount: effectiveParallax,
-}, null, 2)}
+{editConfigJson}
                 </pre>
                 <div style={{ marginTop: '0.3rem', textAlign: 'center' }}>
-                  <CLIButton onClick={() => {
-                    const json = JSON.stringify({
-                      fov: liveValues.fov,
-                      cameraPosition: liveValues.cameraPosition,
-                      focusPoint: liveValues.focusPoint,
-                      parallaxAmount: effectiveParallax,
-                    }, null, 2);
-                    navigator.clipboard.writeText(json);
-                  }}>
+                  <CLIButton onClick={() => navigator.clipboard.writeText(editConfigJson)}>
                     COPY
                   </CLIButton>
                 </div>
               </CLISection>
-              <CLISection label="controls" style={{ paddingTop: '0.6rem', paddingRight: '0.6rem', paddingBottom: '0.4rem', paddingLeft: '0.6rem' }}>
+              <CLISection label="controls" style={EDIT_SECTION_PADDING}>
                 <div style={{ opacity: 0.5, fontSize: '0.55rem' }}>DRAG ORBIT | SHIFT+DRAG PAN</div>
                 <div style={{ opacity: 0.5, fontSize: '0.55rem', marginTop: '0.15rem' }}>SCROLL ZOOM | [R] RESET | [L] LOG</div>
                 <div style={{ opacity: 0.5, fontSize: '0.55rem', marginTop: '0.15rem' }}>[X] EXIT EDIT MODE</div>

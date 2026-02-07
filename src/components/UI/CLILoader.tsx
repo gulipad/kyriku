@@ -2,50 +2,60 @@
 
 import { useState, useEffect, CSSProperties } from "react";
 import { CLIFrame, CLISection } from "./CLIFrame";
-
-type Lang = "en" | "es";
+import type { Lang } from "@/lib/types";
 
 const linkStyle: CSSProperties = {
   color: "inherit",
   textDecoration: "underline",
 };
 
-const bootMessages = {
+type BootMessage =
+  | { type: "header"; text: string }
+  | { type: "subtitle" }
+  | { type: "spacer" }
+  | { type: "ok"; text: string };
+
+const bootStatusMessages: Record<Lang, string[]> = {
   en: [
-    { text: "KYRIKU v1.0", type: "header" },
-    { type: "subtitle" },
-    { type: "spacer" },
-    { text: "Initializing renderer", type: "ok" },
-    { text: "Fetching core memories", type: "ok" },
-    { text: "Loading WebGL context", type: "ok" },
-    { text: "Calibrating flux capacitor", type: "ok" },
-    { text: "Reticulating splines", type: "ok" },
-    { text: "Preparing gaussian splat decoder", type: "ok" },
-    { text: "Warming up the pixels", type: "ok" },
-    { text: "Convincing electrons to cooperate", type: "ok" },
-    { text: "Celebrating 2 years together", type: "ok" },
-    { text: "Loading 3D memories", type: "ok" },
+    "Initializing renderer",
+    "Fetching core memories",
+    "Loading WebGL context",
+    "Calibrating flux capacitor",
+    "Reticulating splines",
+    "Preparing gaussian splat decoder",
+    "Warming up the pixels",
+    "Convincing electrons to cooperate",
+    "Celebrating 2 years together",
+    "Loading 3D memories",
   ],
   es: [
-    { text: "KYRIKU v1.0", type: "header" },
-    { type: "subtitle" },
-    { type: "spacer" },
-    { text: "Inicializando renderer", type: "ok" },
-    { text: "Recuperando recuerdos", type: "ok" },
-    { text: "Cargando contexto WebGL", type: "ok" },
-    { text: "Calibrando condensador de flujo", type: "ok" },
-    { text: "Reticulando splines", type: "ok" },
-    { text: "Preparando decodificador de splats", type: "ok" },
-    { text: "Calentando los píxeles", type: "ok" },
-    { text: "Convenciendo a los electrones", type: "ok" },
-    { text: "Celebrando 2 años juntos", type: "ok" },
-    { text: "Cargando recuerdos 3D", type: "ok" },
+    "Inicializando renderer",
+    "Recuperando recuerdos",
+    "Cargando contexto WebGL",
+    "Calibrando condensador de flujo",
+    "Reticulando splines",
+    "Preparando decodificador de splats",
+    "Calentando los píxeles",
+    "Convenciendo a los electrones",
+    "Celebrando 2 años juntos",
+    "Cargando recuerdos 3D",
   ],
 };
+
+function buildBootMessages(lang: Lang): BootMessage[] {
+  return [
+    { type: "header", text: "KYRIKU v1.0" },
+    { type: "subtitle" },
+    { type: "spacer" },
+    ...bootStatusMessages[lang].map((text): BootMessage => ({ type: "ok", text })),
+  ];
+}
 
 const loaderUi = {
   en: {
     bootSequence: "BOOT SEQUENCE",
+    subtitlePrefix: "A project for ",
+    subtitleInfix: ", by ",
     finalizing: "Finalizing",
     enterDesktop: "PRESS ENTER TO CONTINUE",
     enterMobile: "DOUBLE TAP TO ENTER",
@@ -53,6 +63,8 @@ const loaderUi = {
   },
   es: {
     bootSequence: "SECUENCIA DE ARRANQUE",
+    subtitlePrefix: "Un proyecto para ",
+    subtitleInfix: ", por ",
     finalizing: "Finalizando",
     enterDesktop: "PRESIONA ENTER PARA CONTINUAR",
     enterMobile: "TOCA DOS VECES PARA ENTRAR",
@@ -69,7 +81,7 @@ interface CLILoaderProps {
 }
 
 export function CLILoader({ onReady, isMobile, lang = "en" }: CLILoaderProps) {
-  const messages = bootMessages[lang];
+  const messages = buildBootMessages(lang);
   const ui = loaderUi[lang];
   const [visibleLines, setVisibleLines] = useState(0);
   const [cursor, setCursor] = useState(true);
@@ -218,9 +230,9 @@ export function CLILoader({ onReady, isMobile, lang = "en" }: CLILoaderProps) {
                     marginBottom: "0.25rem",
                   }}
                 >
-                  {lang === "es" ? "Un proyecto para " : "A project for "}
+                  {ui.subtitlePrefix}
                   <a href="https://kyriku.org/" target="_blank" rel="noopener noreferrer" style={linkStyle}>Kyriku</a>
-                  {lang === "es" ? ", por " : ", by "}
+                  {ui.subtitleInfix}
                   <a href="https://gulipad.com" target="_blank" rel="noopener noreferrer" style={linkStyle}>Gulipad</a>
                 </div>
               );

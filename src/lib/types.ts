@@ -1,3 +1,5 @@
+export type Lang = 'en' | 'es';
+
 export interface ParallaxAmount {
   yaw: number;   // Max yaw offset in degrees when mouse at edge
   pitch: number; // Max pitch offset in degrees when mouse at edge
