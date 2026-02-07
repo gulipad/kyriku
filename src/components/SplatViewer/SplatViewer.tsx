@@ -2,7 +2,7 @@
 
 import { Application, Entity } from '@playcanvas/react';
 import { Camera, GSplat, Script } from '@playcanvas/react/components';
-import { useSplat } from '@playcanvas/react/hooks';
+import { useSplat, useApp } from '@playcanvas/react/hooks';
 import { CameraControls } from 'playcanvas/scripts/esm/camera-controls.mjs';
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { Vec2, Vec3, type Entity as PCEntity } from 'playcanvas';
@@ -102,6 +102,23 @@ function NudgeRow({
       <CLIButton onClick={onPlus}>+</CLIButton>
     </div>
   );
+}
+
+function MobilePerformance() {
+  const app = useApp();
+
+  useEffect(() => {
+    app.graphicsDevice.maxPixelRatio = 1.5;
+    app.autoRender = false;
+
+    const interval = setInterval(() => {
+      app.renderNextFrame = true;
+    }, 1000 / 30); // 30fps
+
+    return () => clearInterval(interval);
+  }, [app]);
+
+  return null;
 }
 
 const SplatScene = memo(function SplatScene({
@@ -509,6 +526,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       <Application graphicsDeviceOptions={GRAPHICS_DEVICE_OPTIONS}>
+        {isMobile && <MobilePerformance />}
         <SplatScene
           key={`${splatUrl}-${resetKey}`}
           splatUrl={splatUrl}
