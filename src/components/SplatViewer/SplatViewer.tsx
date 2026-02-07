@@ -116,8 +116,19 @@ function MobilePerformance() {
 
     // Cap framerate
     app.autoRender = false;
+    let frameCount = 0;
+    let lastLog = performance.now();
     const interval = setInterval(() => {
       app.renderNextFrame = true;
+      frameCount++;
+      const now = performance.now();
+      if (now - lastLog >= 3000) {
+        const fps = (frameCount / ((now - lastLog) / 1000)).toFixed(1);
+        const canvas = app.graphicsDevice.canvas as HTMLCanvasElement;
+        console.log(`[perf] ${fps} fps | canvas: ${canvas.width}x${canvas.height} | css: ${canvas.clientWidth}x${canvas.clientHeight} | dpr: ${window.devicePixelRatio} | maxPR: ${app.graphicsDevice.maxPixelRatio}`);
+        frameCount = 0;
+        lastLog = now;
+      }
     }, 1000 / MOBILE_TARGET_FPS);
 
     return () => {
