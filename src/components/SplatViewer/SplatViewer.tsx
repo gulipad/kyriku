@@ -134,11 +134,13 @@ const SplatScene = memo(function SplatScene({
   fov,
   cameraRef,
   onAssetLoaded,
+  mobile,
 }: {
   splatUrl: string;
   fov: number;
   cameraRef: React.MutableRefObject<PCEntity | null>;
   onAssetLoaded?: () => void;
+  mobile?: boolean;
 }) {
   const { asset } = useSplat(splatUrl);
 
@@ -158,7 +160,7 @@ const SplatScene = memo(function SplatScene({
 
       {asset && (
         <Entity rotation={SPLAT_ROTATION}>
-          <GSplat asset={asset} />
+          <GSplat asset={asset} highQualitySH={!mobile} />
         </Entity>
       )}
     </>
@@ -541,6 +543,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
           fov={splatFov}
           cameraRef={cameraRef}
           onAssetLoaded={handleAssetLoaded}
+          mobile={isMobile}
         />
       </Application>
 
