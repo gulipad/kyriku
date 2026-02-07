@@ -474,7 +474,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
     return (
       <div style={{
         width: '100vw',
-        height: '100vh',
+        height: '100dvh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

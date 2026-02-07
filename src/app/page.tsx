@@ -23,7 +23,7 @@ export default async function Home() {
   const config = await getConfig();
 
   return (
-    <main style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+    <main style={{ width: '100vw', height: '100dvh', position: 'relative' }}>
       <SplatViewer config={config} />
     </main>
   );

@@ -52,7 +52,7 @@
       "cameraPosition": [-0.66, 0.4, 1.33],
       "focusPoint": [0.48, -0.33, -2.66],
       "parallaxAmount": { "yaw": 8, "pitch": 4 },
-      "zoomRange": [0.7, 1.5]
+      "zoomRange": [0.7, 1.2]
     },
     {
       "title": "Casa",

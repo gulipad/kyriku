@@ -193,7 +193,7 @@ export function CLILoader({ onReady, isMobile, lang = "en" }: CLILoaderProps) {
     <div
       style={{
         width: "100vw",
-        height: "100vh",
+        height: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
