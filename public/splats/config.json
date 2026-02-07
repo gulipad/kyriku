@@ -49,7 +49,7 @@
       "descriptionEs": "Proyecto de toma de MUAC a niños de la aldea Batwa de Ngozi. El 87% sufre malnutrición.",
       "splatFile": "closeup.sog",
       "fov": 14,
-      "cameraPosition": [-0.66, 0.4, 1.33],
+      "cameraPosition": [-0.32, 0.22, 0.35],
       "focusPoint": [0.48, -0.33, -2.66],
       "parallaxAmount": { "yaw": 8, "pitch": 4 },
       "zoomRange": [0.7, 1.2]
