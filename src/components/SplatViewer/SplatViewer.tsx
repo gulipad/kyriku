@@ -105,7 +105,7 @@ function NudgeRow({
 }
 
 const MOBILE_PIXEL_RATIO = 1;
-const MOBILE_TARGET_FPS = 30;
+const MOBILE_TARGET_FPS = 15;
 
 function MobilePerformance() {
   const app = useApp();
