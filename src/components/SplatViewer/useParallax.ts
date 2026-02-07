@@ -4,6 +4,11 @@ import type { ParallaxAmount } from '@/lib/types';
 
 const DEG = Math.PI / 180;
 const SMOOTH_SPEED = 8; // exponential decay rate (~87ms half-life)
+const INTRO_SMOOTH_SPEED = 2.5; // slower speed for intro reveal
+const INTRO_DURATION = 1.2; // seconds to ramp from intro to normal speed
+const INTRO_YAW = -5; // initial yaw offset in degrees
+const INTRO_PITCH = -1.5; // initial pitch offset in degrees
+const INTRO_ZOOM = 0.88; // initial distance multiplier (closer = more zoom)
 const KEY_DOLLY_STEP = 0.25; // distance change per keypress, relative to initial distance
 const SCROLL_DOLLY_STEP = 0.08; // scroll is less sensitive than keys
 const DEFAULT_ZOOM_RANGE: [number, number] = [0.01, 1.5];
@@ -29,6 +34,8 @@ export function useParallax(
 
   // Track whether we've been enabled before (to distinguish initial mount from edit→view transition)
   const hasBeenEnabled = useRef(false);
+  // Intro animation elapsed time (-1 = no intro active)
+  const introElapsed = useRef(-1);
 
   // Compute initial spherical coords from cameraPosition → focusPoint
   const initialRef = useRef({ yaw: 0, pitch: 0, distance: 0 });
@@ -107,10 +114,12 @@ export function useParallax(
     if (!enabled) return;
 
     if (!hasBeenEnabled.current) {
-      // First enable (initial load): start at rest position with zero offset
+      // First enable (initial load): start offset + zoomed in for intro reveal
       hasBeenEnabled.current = true;
-      currentOffset.current.yaw = 0;
-      currentOffset.current.pitch = 0;
+      currentOffset.current.yaw = INTRO_YAW;
+      currentOffset.current.pitch = INTRO_PITCH;
+      currentDistance.current = initialRef.current.distance * INTRO_ZOOM;
+      introElapsed.current = 0;
       lastTime.current = 0;
       return;
     }
@@ -172,8 +181,18 @@ export function useParallax(
       const targetYaw = mouseRef.current.x * parallaxAmount.yaw;
       const targetPitch = mouseRef.current.y * parallaxAmount.pitch;
 
-      // Exponential smoothing
-      const t = 1 - Math.exp(-SMOOTH_SPEED * dt);
+      // Exponential smoothing (slower during intro reveal, ramps to normal)
+      let speed = SMOOTH_SPEED;
+      if (introElapsed.current >= 0) {
+        introElapsed.current += dt;
+        if (introElapsed.current >= INTRO_DURATION) {
+          introElapsed.current = -1; // intro done
+        } else {
+          const progress = introElapsed.current / INTRO_DURATION;
+          speed = INTRO_SMOOTH_SPEED + (SMOOTH_SPEED - INTRO_SMOOTH_SPEED) * progress;
+        }
+      }
+      const t = 1 - Math.exp(-speed * dt);
       currentOffset.current.yaw += (targetYaw - currentOffset.current.yaw) * t;
       currentOffset.current.pitch += (targetPitch - currentOffset.current.pitch) * t;
 
