@@ -111,15 +111,8 @@ function MobilePerformance() {
   const app = useApp();
 
   useEffect(() => {
-    // Fix resolution at our target pixel ratio instead of device's native (2x-3x)
-    const canvas = app.graphicsDevice.canvas as HTMLCanvasElement;
-    const setFixedResolution = () => {
-      const w = Math.round(canvas.clientWidth * MOBILE_PIXEL_RATIO);
-      const h = Math.round(canvas.clientHeight * MOBILE_PIXEL_RATIO);
-      app.setCanvasResolution('FIXED', w, h);
-    };
-    setFixedResolution();
-    window.addEventListener('resize', setFixedResolution);
+    // Cap pixel ratio (used by RESOLUTION_AUTO during resizeCanvas)
+    app.graphicsDevice.maxPixelRatio = MOBILE_PIXEL_RATIO;
 
     // Cap framerate
     app.autoRender = false;
@@ -129,7 +122,6 @@ function MobilePerformance() {
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('resize', setFixedResolution);
       app.autoRender = true;
     };
   }, [app]);
@@ -541,7 +533,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   // Step 2+: Show splat viewer (same for first and all subsequent splats)
   return (
     <div style={{ width: '100vw', height: '100dvh', position: 'relative' }}>
-      <Application graphicsDeviceOptions={GRAPHICS_DEVICE_OPTIONS} resolutionMode={isMobile ? 'FIXED' : 'AUTO'}>
+      <Application graphicsDeviceOptions={GRAPHICS_DEVICE_OPTIONS}>
         {isMobile && <MobilePerformance />}
         <SplatScene
           key={`${splatUrl}-${resetKey}`}
