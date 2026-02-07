@@ -55,13 +55,13 @@
       "zoomRange": [0.7, 1.2]
     },
     {
-      "title": "Casa",
+      "title": "Cabra",
       "date": "2026-01-30",
       "town": "Ngozi",
       "coordinates": [-2.8988, 29.8407],
       "description": "Goat delivery for families with malnourished children.",
       "descriptionEs": "Entrega de cabras para familias con niños malnutridos.",
-      "splatFile": "casa.sog",
+      "splatFile": "cabra.sog",
       "fov": 10,
       "cameraPosition": [-0.88, -0.57, 12.68],
       "focusPoint": [-0.35, -0.29, 6.82],
@@ -91,6 +91,32 @@
       "fov": 16,
       "cameraPosition": [0.69, -1.04, 2.91],
       "focusPoint": [0.42, -0.65, -0.05],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+    },
+    {
+      "title": "Teresa",
+      "date": "2026-01-28",
+      "town": "Kirundo",
+      "coordinates": [-2.5901, 30.0827],
+      "description": "Visit to the Sisters of Charity center for orphans, disabled, and elderly.",
+      "descriptionEs": "Visita al centro de las Hermanas de la Caridad de huérfanos, discapacitados y ancianos.",
+      "splatFile": "teresa.sog",
+      "fov": 14,
+      "cameraPosition": [-0.07, -0.8, 3.94],
+      "focusPoint": [-0.07, -0.39, 0.97],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 }
+    },
+    {
+      "title": "Casa",
+      "date": "2026-01-29",
+      "town": "Ngozi",
+      "coordinates": [-2.8927, 29.8468],
+      "description": "A home for 6 in the Batwa village.",
+      "descriptionEs": "Una casa para 6 en el poblado Batwa.",
+      "splatFile": "casa.sog",
+      "fov": 16,
+      "cameraPosition": [0.08, -1.6, 5.29],
+      "focusPoint": [0.12, -1.07, 2.34],
       "parallaxAmount": { "yaw": 8, "pitch": 4 }
     }
   ],

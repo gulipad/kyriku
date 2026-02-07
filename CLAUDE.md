@@ -99,7 +99,17 @@ sips -s format jpeg {input_image} --out /tmp/{name}.jpg
 
 Use the converted JPEG as the input for the next step.
 
-#### 1. Generate Gaussians with SHARP
+#### 1. Extract GPS coordinates
+
+Extract GPS coordinates from the original image's EXIF data (run on the original, not the SHARP output):
+
+```bash
+node -e "require('exifr').gps('{input_image_absolute_path}').then(g => g ? console.log(JSON.stringify([g.latitude, g.longitude])) : console.log('No GPS data found'))"
+```
+
+Save the `[lat, lng]` output for use in the config entry (step 4). `exifr` can read HEIC files directly, so run this on the original image before any conversion. If no GPS data is found, use `[0, 0]` as a placeholder.
+
+#### 2. Generate Gaussians with SHARP
 
 Read `sharpPath` from `.pipeline.config.json`, then:
 
@@ -112,7 +122,7 @@ Run this from the ml-sharp directory (the `sharp` CLI depends on being run from 
 
 This produces a `.ply` file at `/tmp/sharp-output/output.ply`.
 
-#### 2. Convert to SOG format
+#### 3. Convert to SOG format
 
 ```bash
 npx @playcanvas/splat-transform /tmp/sharp-output/output.ply public/splats/{name}.sog -H 0
@@ -121,7 +131,7 @@ npx @playcanvas/splat-transform /tmp/sharp-output/output.ply public/splats/{name
 - `-H 0` strips all spherical harmonic bands (band 0 only = diffuse color), keeping file size small
 - The tool handles Morton ordering and compression automatically
 
-#### 3. Add config entry
+#### 4. Add config entry
 
 Add an entry to `public/splats/config.json` in the `splats` array. Use these defaults as a starting point:
 
@@ -130,7 +140,7 @@ Add an entry to `public/splats/config.json` in the `splats` array. Use these def
   "title": "{Name}",
   "date": "{YYYY-MM-DD}",
   "town": "",
-  "coordinates": [0, 0],
+  "coordinates": [{lat}, {lng}],
   "description": "",
   "descriptionEs": "",
   "splatFile": "{name}.sog",
@@ -143,7 +153,7 @@ Add an entry to `public/splats/config.json` in the `splats` array. Use these def
 
 The `cameraPosition` and `focusPoint` will likely need tuning after visual inspection. Run `npm run dev` to preview and adjust.
 
-#### 4. Clean up
+#### 5. Clean up
 
 ```bash
 rm -rf /tmp/sharp-output/
