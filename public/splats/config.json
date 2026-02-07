@@ -79,6 +79,19 @@
       "cameraPosition": [0.11, -0.5, 1.66],
       "focusPoint": [0.07, -0.11, -1.38],
       "parallaxAmount": { "yaw": 8, "pitch": 4 }
+    },
+    {
+      "title": "Aldea",
+      "date": "2026-01-27",
+      "town": "Ngozi",
+      "coordinates": [-2.8955, 29.8415],
+      "description": "Clothing and shoe distribution campaign for children in the Batwa village.",
+      "descriptionEs": "Campaña de reparto de ropa y zapatos a los niños de la aldea Batwa.",
+      "splatFile": "img4988.sog",
+      "fov": 16,
+      "cameraPosition": [0.69, -1.04, 2.91],
+      "focusPoint": [0.42, -0.65, -0.05],
+      "parallaxAmount": { "yaw": 8, "pitch": 4 }
     }
   ],
   "settings": {

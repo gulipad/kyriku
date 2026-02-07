@@ -26,6 +26,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# pipeline config (user-specific paths)
+.pipeline.config.json
+
 # vercel
 .vercel
 
