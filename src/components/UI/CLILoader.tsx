@@ -327,8 +327,8 @@ export function CLILoader({ onReady, isMobile, lang = "en" }: CLILoaderProps) {
             left: 0,
             right: 0,
             textAlign: "center",
-            fontSize: "0.5rem",
-            opacity: 0.3,
+            fontSize: "0.6rem",
+            opacity: 0.5,
           }}
         >
           {ui.desktopHint}
