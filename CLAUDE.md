@@ -11,28 +11,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-This is a Next.js 14 application that displays 3D Gaussian splats (.ply files) with a mouse-driven parallax effect.
+This is a Next.js 14 application that displays 3D Gaussian splats (.sog files) with a mouse-driven parallax effect.
 
 ### Core Technologies
 - **Next.js 14** with App Router (TypeScript)
-- **Three.js** for WebGL rendering
-- **Spark.js** (sparkjs.dev) for Gaussian splat rendering - loaded dynamically from CDN
+- **PlayCanvas** (`@playcanvas/react`) for WebGL rendering
+- **Spark.js** (`@sparkjsdev/spark`) for Gaussian splat rendering
 
 ### Key Components
 
 **SplatViewer** (`src/components/SplatViewer/`)
-- Main viewer component using Three.js
-- Uses dynamic import with `ssr: false` since Three.js requires browser APIs
-- Manages scene, camera, renderer lifecycle in React refs
-- Loads splats via `useSplatLoader` hook which uses Spark.js `SplatMesh`
+- Main viewer component using PlayCanvas React
+- Uses dynamic import with `ssr: false` since PlayCanvas requires browser APIs
+- Loads splats via `useSplat()` hook, renders with `<GSplat>`
 
-**Off-Axis Projection** (`useOffAxisCamera.ts`)
-- Creates parallax effect by modifying camera's projection matrix based on mouse position
-- Uses asymmetric frustum (off-axis projection) rather than moving the camera
+**Parallax** (`useParallax.ts`)
+- Creates parallax effect by orbiting the camera around a focus point based on mouse position
+- Mouse position maps to yaw/pitch offsets, smoothed with exponential decay
+- Runs on `requestAnimationFrame`
 
-**Coordinate Transform** (`src/lib/coordinates.ts`)
-- Converts from OpenCV coordinates (y-down, z-forward) to Three.js coordinates (y-up, z-backward)
-- Required for splats exported from Apple SHARP
+**Coordinate Transform**
+- OpenCV-to-PlayCanvas conversion handled by rotating the splat entity `[180, 0, 0]`
+- No separate transform file; applied inline in `SplatViewer.tsx`
 
 ### Configuration
 
@@ -151,6 +151,6 @@ rm -rf /tmp/sharp-output/
 
 ### Notes
 
-- SHARP outputs in OpenCV coordinates; the app's coordinate transform (`src/lib/coordinates.ts`) handles conversion to Three.js space automatically
+- SHARP outputs in OpenCV coordinates; the app converts to PlayCanvas space via a `[180, 0, 0]` rotation on the splat entity
 - `.sog` files go in `public/splats/` and are served statically — they're not checked into git if large (use Git LFS or deploy separately)
 - The `zoomRange` field is optional — only add it if the default zoom feels wrong

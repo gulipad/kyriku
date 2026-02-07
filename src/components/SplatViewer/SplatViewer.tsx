@@ -106,36 +106,74 @@ function NudgeRow({
 
 const MOBILE_PIXEL_RATIO = 1;
 const MOBILE_TARGET_FPS = 15;
+const DESKTOP_TARGET_FPS = 30;
 
-function MobilePerformance() {
+function RenderController({
+  mobile,
+  idleRef,
+}: {
+  mobile: boolean;
+  idleRef: React.MutableRefObject<boolean>;
+}) {
   const app = useApp();
 
   useEffect(() => {
-    // Cap pixel ratio (used by RESOLUTION_AUTO during resizeCanvas)
-    app.graphicsDevice.maxPixelRatio = MOBILE_PIXEL_RATIO;
-
-    // Cap framerate
+    if (mobile) {
+      app.graphicsDevice.maxPixelRatio = MOBILE_PIXEL_RATIO;
+    }
     app.autoRender = false;
+
+    const targetFps = mobile ? MOBILE_TARGET_FPS : DESKTOP_TARGET_FPS;
+    const frameBudget = 1000 / targetFps;
+    let lastRenderTime = 0;
+    let wasIdle = false;
+    let rafId: number;
     let frameCount = 0;
     let lastLog = performance.now();
-    const interval = setInterval(() => {
-      app.renderNextFrame = true;
-      frameCount++;
-      const now = performance.now();
-      if (now - lastLog >= 3000) {
-        const fps = (frameCount / ((now - lastLog) / 1000)).toFixed(1);
-        const canvas = app.graphicsDevice.canvas as HTMLCanvasElement;
-        console.log(`[perf] ${fps} fps | canvas: ${canvas.width}x${canvas.height} | css: ${canvas.clientWidth}x${canvas.clientHeight} | dpr: ${window.devicePixelRatio} | maxPR: ${app.graphicsDevice.maxPixelRatio}`);
-        frameCount = 0;
-        lastLog = now;
+
+    const tick = (now: number) => {
+      const elapsed = now - lastRenderTime;
+
+      if (elapsed >= frameBudget) {
+        const idle = idleRef.current;
+        // Render when camera is moving, plus one extra frame when it settles
+        const shouldRender = !idle || !wasIdle;
+        wasIdle = idle;
+
+        if (shouldRender) {
+          app.renderNextFrame = true;
+          frameCount++;
+        }
+
+        if (mobile) {
+          const logNow = performance.now();
+          if (logNow - lastLog >= 3000) {
+            const fps = (frameCount / ((logNow - lastLog) / 1000)).toFixed(1);
+            const canvas = app.graphicsDevice.canvas as HTMLCanvasElement;
+            console.log(`[perf] ${fps} fps | canvas: ${canvas.width}x${canvas.height} | dpr: ${window.devicePixelRatio} | maxPR: ${app.graphicsDevice.maxPixelRatio}`);
+            frameCount = 0;
+            lastLog = logNow;
+          }
+        }
+
+        lastRenderTime = now - (elapsed % frameBudget);
       }
-    }, 1000 / MOBILE_TARGET_FPS);
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+
+    // Force a render on window resize so the canvas updates at new dimensions
+    const onResize = () => { app.renderNextFrame = true; };
+    window.addEventListener('resize', onResize);
 
     return () => {
-      clearInterval(interval);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', onResize);
       app.autoRender = true;
     };
-  }, [app]);
+  }, [app, mobile, idleRef]);
 
   return null;
 }
@@ -195,6 +233,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   const [liveValues, setLiveValues] = useState<CameraState | null>(null);
   const [loaderVisible, setLoaderVisible] = useState(true);
   const cameraRef = useRef<PCEntity | null>(null);
+  const idleRef = useRef(false);
 
   // Detect mobile (compute once)
   const isMobile = useMemo(
@@ -238,7 +277,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   );
 
   // Parallax: enabled when booted and not in edit mode
-  useParallax(cameraRef, configFocusPoint, configCameraPosition, parallaxAmount, hasBooted && !controlMode, undefined, currentSplat?.zoomRange, isMobile);
+  useParallax(cameraRef, configFocusPoint, configCameraPosition, parallaxAmount, hasBooted && !controlMode, undefined, currentSplat?.zoomRange, isMobile, idleRef);
 
   // Initialize CameraControls pose and settings
   useEffect(() => {
@@ -547,7 +586,7 @@ export default function SplatViewer({ config }: SplatViewerProps) {
   return (
     <div style={{ width: '100vw', height: '100dvh', position: 'relative' }}>
       <Application graphicsDeviceOptions={GRAPHICS_DEVICE_OPTIONS}>
-        {isMobile && <MobilePerformance />}
+        <RenderController mobile={isMobile} idleRef={idleRef} />
         <SplatScene
           key={`${splatUrl}-${resetKey}`}
           splatUrl={splatUrl}
