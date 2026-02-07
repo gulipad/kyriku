@@ -104,18 +104,28 @@ function NudgeRow({
   );
 }
 
+const MOBILE_PIXEL_RATIO = 1;
+const MOBILE_TARGET_FPS = 30;
+
 function MobilePerformance() {
   const app = useApp();
 
   useEffect(() => {
-    app.graphicsDevice.maxPixelRatio = 1.5;
+    const device = app.graphicsDevice;
+    device.maxPixelRatio = MOBILE_PIXEL_RATIO;
+    // Force canvas resize to apply new pixel ratio
+    app.resizeCanvas();
+
     app.autoRender = false;
 
     const interval = setInterval(() => {
       app.renderNextFrame = true;
-    }, 1000 / 30); // 30fps
+    }, 1000 / MOBILE_TARGET_FPS);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      app.autoRender = true;
+    };
   }, [app]);
 
   return null;

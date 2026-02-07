@@ -65,6 +65,7 @@ const loaderUi = {
     finalizing: "Finalizing",
     enterDesktop: "PRESS ENTER TO CONTINUE",
     enterMobile: "DOUBLE TAP TO ENTER",
+    desktopHint: "This site is better experienced on desktop",
     loadingSplat: "Loading splat",
   },
   es: {
@@ -74,6 +75,7 @@ const loaderUi = {
     finalizing: "Finalizando",
     enterDesktop: "PRESIONA ENTER PARA CONTINUAR",
     enterMobile: "TOCA DOS VECES PARA ENTRAR",
+    desktopHint: "Este sitio se disfruta mejor en escritorio",
     loadingSplat: "Cargando splat",
   },
 };
@@ -317,6 +319,21 @@ export function CLILoader({ onReady, isMobile, lang = "en" }: CLILoaderProps) {
           `}</style>
         </CLISection>
       </CLIFrame>
+      {isMobile && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "1.5rem",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            fontSize: "0.5rem",
+            opacity: 0.3,
+          }}
+        >
+          {ui.desktopHint}
+        </div>
+      )}
     </div>
   );
 }
